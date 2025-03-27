@@ -1,0 +1,44 @@
+{
+  "name": "flowex",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.9.5",
+    "autoprefixer": "^10.4.17",
+    "chart.js": "^4.4.1",
+    "ethers": "^6.11.1",
+    "graphql": "^16.8.1",
+    "next": "14.1.0",
+    "postcss": "^8.4.35",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "redis": "^4.6.13",
+    "tailwindcss": "^3.4.1",
+    "web3": "^4.5.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "@openzeppelin/test-helpers": "^0.5.16",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^20.17.27",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.5",
+    "dotenv": "^16.4.7",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "hardhat": "^2.22.19",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.8.2"
+  }
+}
