@@ -1,40 +1,68 @@
 import { ethers } from "hardhat";
-import { MockERC20 } from "../typechain-types/src/contracts/MockERC20";
-import { CurveAMM } from "../typechain-types/src/contracts/CurveAMM";
 
 async function main() {
+  // 获取签名者
   const [signer] = await ethers.getSigners();
-  const signerAddress = await signer.getAddress();
-  const amount = ethers.parseEther("1000");
-
-  // Deploy mock tokens
+  console.log("Deploying contracts with account:", signer.address);
+  
+  // 部署 USDT 和 USDC 代币
   const MockToken = await ethers.getContractFactory("MockERC20");
-  const token1 = await MockToken.deploy("Token 1", "TK1");
-  const token2 = await MockToken.deploy("Token 2", "TK2");
+  const usdt = await MockToken.deploy("USDT", "USDT", 18);
+  const usdc = await MockToken.deploy("USDC", "USDC", 18);
+  
+  await usdt.waitForDeployment();
+  await usdc.waitForDeployment();
+  
+  const usdtAddress = await usdt.getAddress();
+  const usdcAddress = await usdc.getAddress();
+  
+  console.log("USDT deployed to:", usdtAddress);
+  console.log("USDC deployed to:", usdcAddress);
+  
+  // 部署 StablecoinSwap 合约
+  const StablecoinSwap = await ethers.getContractFactory("StablecoinSwap");
+  const swap = await StablecoinSwap.deploy(usdtAddress, usdcAddress);
+  
+  await swap.waitForDeployment();
+  const swapAddress = await swap.getAddress();
+  console.log("StablecoinSwap deployed to:", swapAddress);
+  
+  // 铸造一些代币用于测试
+  const userAmount = ethers.parseEther("10000"); // 给用户1万代币
+  const liquidityAmount = ethers.parseEther("1000"); // 给池子1000代币，减少数量避免余额不足
+  const totalAmount = ethers.parseEther("11000"); // 总共铸造11000代币
 
-  await token1.waitForDeployment();
-  await token2.waitForDeployment();
+  // 给用户铸造代币
+  console.log("Minting tokens for user...");
+  await usdt.mint(signer.address, totalAmount); // 确保有足够的代币添加流动性
+  await usdc.mint(signer.address, totalAmount);
+  
+  // 批准并添加流动性
+  console.log("Approving tokens for liquidity...");
+  await usdt.approve(swapAddress, liquidityAmount);
+  await usdc.approve(swapAddress, liquidityAmount);
 
-  // Deploy Curve AMM
-  const CurveAMMFactory = await ethers.getContractFactory("CurveAMM");
-  const amm = await CurveAMMFactory.deploy(
-    await token1.getAddress(),
-    await token2.getAddress()
-  );
+  console.log("Adding initial liquidity...");
+  await swap.addLiquidity(liquidityAmount, liquidityAmount);
+  
+  // 查看储备金
+  const reserve1 = await swap.reserve1();
+  const reserve2 = await swap.reserve2();
+  console.log("Reserve1 (USDT):", ethers.formatEther(reserve1));
+  console.log("Reserve2 (USDC):", ethers.formatEther(reserve2));
 
-  await amm.waitForDeployment();
-
-  // Mint test tokens
-  await token1.mint(signerAddress, amount);
-  await token2.mint(signerAddress, amount);
-
-  console.log("Minted test tokens to:", signerAddress);
-  console.log("Token 1 address:", await token1.getAddress());
-  console.log("Token 2 address:", await token2.getAddress());
-  console.log("AMM address:", await amm.getAddress());
+  console.log("User balances:");
+  const usdtBalance = await usdt.balanceOf(signer.address);
+  const usdcBalance = await usdc.balanceOf(signer.address);
+  console.log("USDT:", ethers.formatEther(usdtBalance));
+  console.log("USDC:", ethers.formatEther(usdcBalance));
+  
+  console.log("Setup complete! Ready for swapping.");
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-}); 
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  }); 

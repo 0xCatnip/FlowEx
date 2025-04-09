@@ -1,4 +1,4 @@
-// File: /Users/coffee_cat/Files/Polyu/Subjects/DECENTRALIZED FINANCE_COMP5568/project/FlowEx/src/app/page.tsx
+// File: /Users/cailing/FlowEx/src/app/page.tsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

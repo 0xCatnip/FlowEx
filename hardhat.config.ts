@@ -1,12 +1,10 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import * as dotenv from "dotenv";
-import "@typechain/hardhat";
-import "ts-node/register";
+require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
+require("@typechain/hardhat");
+require("ts-node/register");
 
-dotenv.config();
-
-const config: HardhatUserConfig = {
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
   solidity: {
     version: "0.8.19",
     settings: {
@@ -33,6 +31,4 @@ const config: HardhatUserConfig = {
     outDir: "typechain-types",
     target: "ethers-v6",
   }
-};
-
-export default config; 
+}; 
