@@ -31,7 +31,7 @@ export default function SwapPage() {
       <div className="min-h-screen w-full flex flex-col items-center justify-center">
         <div className="w-1/3 h-auto bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-center mb-4">
-            <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl">
+            <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
               SWAP
             </p>
           </div>
