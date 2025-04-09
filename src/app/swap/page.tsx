@@ -40,7 +40,7 @@ export default function SwapPage() {
               type="text"
               value={fromToken}
               onChange={(e) => setFromToken(e.target.value)}
-              placeholder="0.0"
+              placeholder="Enter address"
               className="flex-1 p-3 border rounded-lg"
             />
             <select className="p-3 border rounded-lg">
@@ -62,7 +62,7 @@ export default function SwapPage() {
               type="text"
               value={toToken}
               onChange={(e) => setToToken(e.target.value)}
-              placeholder="0.0"
+              placeholder="Enter address"
               className="flex-1 p-3 border rounded-lg"
             />
             <select className="p-3 border rounded-lg">
