@@ -1,18 +1,12 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserProvider, JsonRpcSigner } from 'ethers';
-
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
+import { ethers } from 'ethers';
 
 interface Web3ContextType {
   account: string | null;
-  provider: BrowserProvider | null;
-  signer: JsonRpcSigner | null;
+  provider: ethers.providers.Web3Provider | null;
+  signer: ethers.Signer | null;
   connect: () => Promise<void>;
   disconnect: () => void;
 }
@@ -31,15 +25,15 @@ export function useWeb3() {
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [account, setAccount] = useState<string | null>(null);
-  const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
+  const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
+  const [signer, setSigner] = useState<ethers.Signer | null>(null);
 
   const connect = async () => {
     if (typeof window !== 'undefined' && window.ethereum) {
       try {
-        const provider = new BrowserProvider(window.ethereum);
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const signer = await provider.getSigner();
+        const provider = new ethers.providers.Web3Provider(window.ethereum as any);
+        await (window.ethereum as any).request({ method: 'eth_requestAccounts' });
+        const signer = provider.getSigner();
         const address = await signer.getAddress();
         
         setAccount(address);
@@ -61,7 +55,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+      (window.ethereum as any).on('accountsChanged', (accounts: string[]) => {
         if (accounts.length > 0) {
           setAccount(accounts[0]);
         } else {
@@ -69,15 +63,15 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      window.ethereum.on('chainChanged', () => {
+      (window.ethereum as any).on('chainChanged', () => {
         window.location.reload();
       });
     }
 
     return () => {
       if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', () => {});
-        window.ethereum.removeListener('chainChanged', () => {});
+        (window.ethereum as any).removeListener('accountsChanged', () => {});
+        (window.ethereum as any).removeListener('chainChanged', () => {});
       }
     };
   }, []);

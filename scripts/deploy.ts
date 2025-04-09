@@ -1,40 +1,46 @@
-import { ethers } from "hardhat";
-import { MockERC20 } from "../typechain-types/src/contracts/MockERC20";
-import { CurveAMM } from "../typechain-types/src/contracts/CurveAMM";
+import hre from "hardhat";
+import { parseEther } from "ethers/lib/utils";
 
 async function main() {
-  const [signer] = await ethers.getSigners();
-  const signerAddress = await signer.getAddress();
-  const amount = ethers.parseEther("1000");
+  console.log("Deploying contracts...");
 
-  // Deploy mock tokens
-  const MockToken = await ethers.getContractFactory("MockERC20");
-  const token1 = await MockToken.deploy("Token 1", "TK1");
-  const token2 = await MockToken.deploy("Token 2", "TK2");
+  // Deploy Token1
+  const Token = await hre.ethers.getContractFactory("MockERC20");
+  const token1 = await Token.deploy("Token One", "TKN1");
+  await token1.deployed();
+  console.log(`Token1 deployed to: ${token1.address}`);
 
-  await token1.waitForDeployment();
-  await token2.waitForDeployment();
+  // Deploy Token2
+  const token2 = await Token.deploy("Token Two", "TKN2");
+  await token2.deployed();
+  console.log(`Token2 deployed to: ${token2.address}`);
 
-  // Deploy Curve AMM
-  const CurveAMMFactory = await ethers.getContractFactory("CurveAMM");
-  const amm = await CurveAMMFactory.deploy(
-    await token1.getAddress(),
-    await token2.getAddress()
-  );
+  // Deploy CurveAMM
+  const CurveAMM = await hre.ethers.getContractFactory("CurveAMM");
+  const curveAMM = await CurveAMM.deploy(token1.address, token2.address);
+  await curveAMM.deployed();
+  console.log(`CurveAMM deployed to: ${curveAMM.address}`);
 
-  await amm.waitForDeployment();
-
-  // Mint test tokens
-  await token1.mint(signerAddress, amount);
-  await token2.mint(signerAddress, amount);
-
-  console.log("Minted test tokens to:", signerAddress);
-  console.log("Token 1 address:", await token1.getAddress());
-  console.log("Token 2 address:", await token2.getAddress());
-  console.log("AMM address:", await amm.getAddress());
+  // Mint tokens to deployer for testing
+  const [deployer] = await hre.ethers.getSigners();
+  const mintAmount = parseEther("10000");
+  
+  console.log("Minting test tokens to deployer...");
+  await token1.mint(deployer.address, mintAmount);
+  await token2.mint(deployer.address, mintAmount);
+  
+  console.log("Deployment completed!");
+  console.log("");
+  console.log("Contract Addresses:");
+  console.log("-------------------");
+  console.log(`NEXT_PUBLIC_AMM_CONTRACT_ADDRESS=${curveAMM.address}`);
+  console.log(`NEXT_PUBLIC_TOKEN1_ADDRESS=${token1.address}`);
+  console.log(`NEXT_PUBLIC_TOKEN2_ADDRESS=${token2.address}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-}); 
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  }); 

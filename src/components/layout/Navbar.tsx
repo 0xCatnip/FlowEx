@@ -1,6 +1,6 @@
 'use client';
 
-import { useWeb3 } from '@/components/providers/Web3Provider';
+import { useWeb3 } from '../providers/Web3Provider';
 import Link from 'next/link';
 
 export default function Navbar() {

@@ -1,10 +1,4 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import * as dotenv from "dotenv";
-import "@typechain/hardhat";
-import "ts-node/register";
-
-dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -28,10 +22,6 @@ const config: HardhatUserConfig = {
     sources: "./src/contracts",
     artifacts: "./src/contracts/artifacts",
     cache: "./src/contracts/cache"
-  },
-  typechain: {
-    outDir: "typechain-types",
-    target: "ethers-v6",
   }
 };
 
