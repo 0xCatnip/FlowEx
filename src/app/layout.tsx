@@ -21,7 +21,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Web3Provider>
-          <div className="flex flex-col min-h-screen">
+          <div className="flex flex-col min-h-screen bg-gradient-to-r from-purple-500 to-blue-500">
             <Navbar />
             <main className="flex-grow">{children}</main>
             <Footer />

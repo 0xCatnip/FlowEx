@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="bg-gray-800 text-white py-8">
+    <footer className="bg-gray-900 text-white py-8">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
@@ -14,17 +14,17 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <a href="/swap" className="text-gray-400 hover:text-white">
+                <a href="/swap" className="text-gray-400 hover:text-white transition duration-300">
                   Swap
                 </a>
               </li>
               <li>
-                <a href="/pool" className="text-gray-400 hover:text-white">
+                <a href="/pool" className="text-gray-400 hover:text-white transition duration-300">
                   Pool
                 </a>
               </li>
               <li>
-                <a href="/analytics" className="text-gray-400 hover:text-white">
+                <a href="/analytics" className="text-gray-400 hover:text-white transition duration-300">
                   Analytics
                 </a>
               </li>
@@ -35,17 +35,17 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Resources</h3>
             <ul className="space-y-2">
               <li>
-                <a href="/docs" className="text-gray-400 hover:text-white">
+                <a href="/docs" className="text-gray-400 hover:text-white transition duration-300">
                   Documentation
                 </a>
               </li>
               <li>
-                <a href="/faq" className="text-gray-400 hover:text-white">
+                <a href="/faq" className="text-gray-400 hover:text-white transition duration-300">
                   FAQ
                 </a>
               </li>
               <li>
-                <a href="/contact" className="text-gray-400 hover:text-white">
+                <a href="/contact" className="text-gray-400 hover:text-white transition duration-300">
                   Contact
                 </a>
               </li>

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
+import { formatEther } from 'ethers';
 
 declare global {
   interface Window {
@@ -45,6 +46,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         setAccount(address);
         setProvider(provider);
         setSigner(signer);
+        
       } catch (error) {
         console.error('Failed to connect wallet:', error);
       }
@@ -57,9 +59,17 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     setAccount(null);
     setProvider(null);
     setSigner(null);
+    localStorage.removeItem('account'); // Clear account from localStorage
   };
 
   useEffect(() => {
+    // Check localStorage for saved account
+    const savedAccount = localStorage.getItem('account');
+    if (savedAccount) {
+      setAccount(savedAccount);
+      // Here you can add logic to restore provider and signer if needed
+    }
+
     if (typeof window !== 'undefined' && window.ethereum) {
       window.ethereum.on('accountsChanged', (accounts: string[]) => {
         if (accounts.length > 0) {
