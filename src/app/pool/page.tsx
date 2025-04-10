@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import CurveAMMABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
 import FACTORY_ABI from "@/contracts/artifacts/src/contracts/CurveAMMFactory.sol/CurveAMMFactory.json";
 import ERC20_ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json";
+import LiquidityList from "@/components/layout/LiquidityCardList";
+import Link from "next/link";
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS!;
 
@@ -308,6 +310,12 @@ export default function PoolPage() {
                       </option>
                     ))}
                   </select>
+                  <Link
+                    href="/amm"
+                    className="text-xs hover:text-gray-300 transition duration-300 text-right"
+                  >
+                    Need more pools?
+                  </Link>
                 </div>
                 <div className="space-y-3">
                   {/* Token 1 */}
@@ -368,32 +376,8 @@ export default function PoolPage() {
 
           {/* Remove Liquidity Form */}
           <h2 className="text-lg font-semibold mb-2">Your Liquidity</h2>
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="mb-2">ETH/USDT</h2>
-            <div className="space-y-6">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">
-                  <p>Share: 2.5%</p>
-                  <p>Value: $1,234.56</p>
-                </div>
-              </div>
-              <div className="flex space-x-4">
-                <button
-                  onClick={handleRemoveLiquidity}
-                  className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 disabled:bg-gray-400"
-                  disabled={!account}
-                >
-                  Remove
-                </button>
-                <button
-                  onClick={handleAddLiquidity}
-                  className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
-                  disabled={!account}
-                >
-                  Add
-                </button>
-              </div>
-            </div>
+          <div className="h-96 overflow-y-auto">
+            <LiquidityList />
           </div>
         </div>
       </div>

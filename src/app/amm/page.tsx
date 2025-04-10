@@ -46,6 +46,14 @@ export default function AMMPoolPage() {
     init();
   }, []);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchAMMs();
+    };
+
+    fetchData();
+  }, [factory]);
+
   const fetchTokenInfo = async (tokenAddress: string) => {
     const tokenContract = new Contract(tokenAddress, ERC20_ABI.abi, provider);
     const symbol = await tokenContract.symbol();
@@ -177,52 +185,65 @@ export default function AMMPoolPage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-4 mt-10">
-      <h1 className="text-2xl font-bold">Curve-style AMM Pools</h1>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Token A address"
-          value={tokenA}
-          onChange={(e) => setTokenA(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-        <input
-          type="text"
-          placeholder="Token B address"
-          value={tokenB}
-          onChange={(e) => setTokenB(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-        <button
-          onClick={createAMM}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          {loading ? "Creating..." : "Create AMM"}
-        </button>
-      </div>
-      <button onClick={fetchAMMs} className="px-4 py-2 border rounded">
-        Refresh Pools
-      </button>
-      <div className="space-y-2">
-        {ammPools.length === 0 && (
-          <p className="text-gray-500">No pools found</p>
-        )}
-        {ammPools.map((pool, idx) => (
-          <div key={idx} className="p-3 border rounded bg-gray-50">
-            <p>
-              Pool #{idx + 1}: {pool.poolAddress}
-            </p>
-            <p>
-              Token {pool.tokenA}: {pool.tokenAAddress}
-            </p>
-            <p>
-              Token {pool.tokenB}: {pool.tokenBAddress}
+    <main className="min-h-screen">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center">
+        <div className="w-1/3 h-auto bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-center mb-4">
+            <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
+              Curve-style AMM Pools
             </p>
           </div>
-        ))}
+          <div className="flex gap-2 my-6">
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500">Name of Token A</label>
+              <input
+                type="text"
+                value={tokenA}
+                onChange={(e) => setTokenA(e.target.value)}
+                placeholder="Token A address"
+                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500">Name of Token B</label>
+              <input
+                type="text"
+                placeholder="Token B address"
+                value={tokenB}
+                onChange={(e) => setTokenB(e.target.value)}
+                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <button
+            onClick={createAMM}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4"
+          >
+            {loading ? "Creating..." : "Create AMM"}
+          </button>
+          <button
+            onClick={fetchAMMs}
+            className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4"
+          >
+            Refresh Pools
+          </button>
+          <div className="max-h-60 overflow-y-auto">
+            <div className="space-y-2">
+              {ammPools.length === 0 && (
+                <p className="text-gray-500">No pools found</p>
+              )}
+              {ammPools.map((pool, idx) => (
+                <div key={idx} className="p-4 text-sm border rounded-lg bg-gray-50 shadow-md hover:shadow-lg transition duration-200">
+                  <p className="font-semibold">Pool #{idx + 1}: {pool.poolAddress.slice(0,16)} ...</p>
+                  <p className="text-xs">Token {pool.tokenA}: {pool.tokenAAddress.slice(0,16)} ...</p>
+                  <p className="text-xs">Token {pool.tokenB}: {pool.tokenBAddress.slice(0,16)} ...</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
