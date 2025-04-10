@@ -8,9 +8,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract CurveAMM is ReentrancyGuard, Ownable {
     IERC20 public token1;
     IERC20 public token2;
+    
     uint256 public constant PRECISION = 1e18;
     uint256 public constant FEE = 30; // 0.3%
     uint256 public constant FEE_DENOMINATOR = 10000;
+    uint256 public constant A = 100; // Amplification coefficient
 
     uint256 public reserve1;
     uint256 public reserve2;
@@ -31,13 +33,13 @@ contract CurveAMM is ReentrancyGuard, Ownable {
     function addLiquidity(uint256 amount1, uint256 amount2) external nonReentrant returns (uint256 liquidity) {
         require(amount1 > 0 && amount2 > 0, "Amounts must be greater than 0");
 
-        // Calculate liquidity to mint
+        // Calculate liquidity to mint using Curve's invariant
         if (totalSupply == 0) {
-            liquidity = sqrt(amount1 * amount2);
+            liquidity = calculateInvariant(amount1, amount2);
         } else {
-            uint256 liquidity1 = (amount1 * totalSupply) / reserve1;
-            uint256 liquidity2 = (amount2 * totalSupply) / reserve2;
-            liquidity = liquidity1 < liquidity2 ? liquidity1 : liquidity2;
+            uint256 newInvariant = calculateInvariant(reserve1 + amount1, reserve2 + amount2);
+            uint256 oldInvariant = calculateInvariant(reserve1, reserve2);
+            liquidity = (totalSupply * (newInvariant - oldInvariant)) / oldInvariant;
         }
 
         require(liquidity > 0, "Insufficient liquidity minted");
@@ -59,9 +61,12 @@ contract CurveAMM is ReentrancyGuard, Ownable {
         require(liquidity > 0, "Amount must be greater than 0");
         require(balanceOf[msg.sender] >= liquidity, "Insufficient balance");
 
-        // Calculate amounts to return
-        amount1 = (liquidity * reserve1) / totalSupply;
-        amount2 = (liquidity * reserve2) / totalSupply;
+        // Calculate amounts to return using Curve's invariant
+        uint256 oldInvariant = calculateInvariant(reserve1, reserve2);
+        uint256 newInvariant = (oldInvariant * (totalSupply - liquidity)) / totalSupply;
+        
+        // Calculate new reserves that maintain the invariant
+        (amount1, amount2) = calculateNewReserves(newInvariant);
 
         require(amount1 > 0 && amount2 > 0, "Insufficient amounts");
 
@@ -86,9 +91,16 @@ contract CurveAMM is ReentrancyGuard, Ownable {
         uint256 reserveIn = isToken1 ? reserve1 : reserve2;
         uint256 reserveOut = isToken1 ? reserve2 : reserve1;
 
-        // Calculate amount out
-        amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
+        // Calculate amount out using Curve's invariant
+        uint256 oldInvariant = calculateInvariant(reserve1, reserve2);
+        uint256 newReserveIn = reserveIn + amountIn;
+        uint256 newReserveOut = calculateNewReserveOut(newReserveIn, oldInvariant);
+        amountOut = reserveOut - newReserveOut;
+
         require(amountOut > 0, "Insufficient output amount");
+
+        // Apply fee
+        amountOut = (amountOut * (FEE_DENOMINATOR - FEE)) / FEE_DENOMINATOR;
 
         // Transfer tokens
         tokenIn.transferFrom(msg.sender, address(this), amountIn);
@@ -106,14 +118,27 @@ contract CurveAMM is ReentrancyGuard, Ownable {
         emit Swap(msg.sender, amountIn, amountOut, isToken1);
     }
 
-    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) public pure returns (uint256) {
-        require(amountIn > 0, "Amount must be greater than 0");
-        require(reserveIn > 0 && reserveOut > 0, "Insufficient reserves");
+    function calculateInvariant(uint256 x, uint256 y) internal pure returns (uint256) {
+        // Curve's invariant: D = (x + y) + A * (x * y) / (x + y)
+        uint256 sum = x + y;
+        if (sum == 0) return 0;
+        return sum + (A * x * y) / sum;
+    }
 
-        uint256 amountInWithFee = amountIn * (FEE_DENOMINATOR - FEE);
-        uint256 numerator = amountInWithFee * reserveOut;
-        uint256 denominator = (reserveIn * FEE_DENOMINATOR) + amountInWithFee;
-        return numerator / denominator;
+    function calculateNewReserves(uint256 invariant) internal pure returns (uint256 x, uint256 y) {
+        // For simplicity, we assume equal distribution
+        uint256 sum = invariant / (1 + A);
+        x = sum / 2;
+        y = sum / 2;
+    }
+
+    function calculateNewReserveOut(uint256 reserveIn, uint256 invariant) internal pure returns (uint256) {
+        // Solve for reserveOut given reserveIn and invariant
+        uint256 a = A;
+        uint256 b = reserveIn;
+        uint256 c = (invariant - reserveIn) * reserveIn;
+        uint256 discriminant = b * b + 4 * a * c;
+        return (sqrt(discriminant) - b) / (2 * a);
     }
 
     function sqrt(uint256 y) internal pure returns (uint256 z) {

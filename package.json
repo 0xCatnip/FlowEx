@@ -12,7 +12,6 @@
     "@apollo/client": "^3.9.5",
     "autoprefixer": "^10.4.17",
     "chart.js": "^4.4.1",
-    "ethers": "^6.11.1",
     "graphql": "^16.8.1",
     "js-md5": "^0.8.3",
     "md5": "^2.3.0",
@@ -32,15 +31,16 @@
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/dotenv": "^6.1.1",
-    "@types/node": "^20.17.27",
+    "@types/node": "^20.17.30",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.5",
     "dotenv": "^16.4.7",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
+    "ethers": "^6.13.5",
     "hardhat": "^2.22.19",
     "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }

@@ -1,40 +1,62 @@
-import { ethers } from "hardhat";
-import { MockERC20 } from "../typechain-types/src/contracts/MockERC20";
-import { CurveAMM } from "../typechain-types/src/contracts/CurveAMM";
+import { ethers } from "hardhat";  // Changed from 'hre' import
+import { parseEther } from "ethers";
 
 async function main() {
-  const [signer] = await ethers.getSigners();
-  const signerAddress = await signer.getAddress();
-  const amount = ethers.parseEther("1000");
+  console.log("Deploying contracts...");
 
-  // Deploy mock tokens
-  const MockToken = await ethers.getContractFactory("MockERC20");
-  const token1 = await MockToken.deploy("Token 1", "TK1");
-  const token2 = await MockToken.deploy("Token 2", "TK2");
+  // 1. Get signers
+  const [deployer] = await ethers.getSigners();
+  console.log(`Deployer address: ${deployer.address}`);
 
+  // 2. Deploy Tokens
+  const Token = await ethers.getContractFactory("MockERC20");
+  
+  console.log("Deploying Token1...");
+  const token1 = await Token.deploy("Token One", "TKN1");
   await token1.waitForDeployment();
+  const token1Address = await token1.getAddress();
+  console.log(`Token1 deployed to: ${token1Address}`);
+
+  console.log("Deploying Token2...");
+  const token2 = await Token.deploy("Token Two", "TKN2");
   await token2.waitForDeployment();
+  const token2Address = await token2.getAddress();
+  console.log(`Token2 deployed to: ${token2Address}`);
 
-  // Deploy Curve AMM
-  const CurveAMMFactory = await ethers.getContractFactory("CurveAMM");
-  const amm = await CurveAMMFactory.deploy(
-    await token1.getAddress(),
-    await token2.getAddress()
-  );
+  // 3. Deploy the CurveMath library
+  const CurveMath = await ethers.getContractFactory("CurveMath");
+  const curveMath = await CurveMath.deploy();
+  const curveMathAddress = await curveMath.getAddress();
+  console.log(`CurveMath library deployed to: ${curveMathAddress}`);
 
-  await amm.waitForDeployment();
+  // 4. Link the library and deploy the CurveAMM contract
+  const CurveAMMFactory = await ethers.getContractFactory("CurveAMM", {
+    libraries: {
+      CurveMath: curveMathAddress,
+    },
+  });
 
-  // Mint test tokens
-  await token1.mint(signerAddress, amount);
-  await token2.mint(signerAddress, amount);
+  const curveAMM = await CurveAMMFactory.deploy(token1Address, token2Address);
+  await curveAMM.waitForDeployment();
+  const ammAddress = await curveAMM.getAddress();
+  console.log(`CurveAMM deployed to: ${ammAddress}`);
 
-  console.log("Minted test tokens to:", signerAddress);
-  console.log("Token 1 address:", await token1.getAddress());
-  console.log("Token 2 address:", await token2.getAddress());
-  console.log("AMM address:", await amm.getAddress());
+  // 5. Mint tokens (with transaction waits)
+  const mintAmount = parseEther("10000");
+  console.log(`Minting ${ethers.formatEther(mintAmount)} tokens to deployer...`);
+  
+  await (await token1.mint(deployer.address, mintAmount)).wait();  // Added await+parentheses
+  await (await token2.mint(deployer.address, mintAmount)).wait();
+
+  // 6. Output
+  console.log("\nDeployment completed!");
+  console.log("-------------------");
+  console.log(`export NEXT_PUBLIC_AMM_CONTRACT_ADDRESS="${ammAddress}"`);
+  console.log(`export NEXT_PUBLIC_TOKEN1_ADDRESS="${token1Address}"`);
+  console.log(`export NEXT_PUBLIC_TOKEN2_ADDRESS="${token2Address}"`);
 }
 
 main().catch((error) => {
   console.error(error);
-  process.exitCode = 1;
-}); 
+  process.exit(1);
+});
