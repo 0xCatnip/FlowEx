@@ -17,8 +17,8 @@ export default function PoolPage() {
 
   const [tokenA, setTokenA] = useState<string>("");
   const [tokenB, setTokenB] = useState<string>("");
-  const [token1Amount, setToken1Amount] = useState<string>("");
-  const [token2Amount, setToken2Amount] = useState<string>("");
+  const [token0Amount, settoken0Amount] = useState<string>("");
+  const [token1Amount, settoken1Amount] = useState<string>("");
   const [selectedPool, setSelectedPool] = useState<{
     tokenA: string;
     tokenB: string;
@@ -105,22 +105,22 @@ export default function PoolPage() {
       const reserve1 = await amm.token_0_reserve();
       const reserve2 = await amm.token_1_reserve();
 
-      const token1Address = await amm.token_0();
-      const token2Address = await amm.token_1();
+      const token0Address = await amm.token_0();
+      const token1Address = await amm.token_1();
 
+      const token0Info = await fetchTokenInfo(token0Address);
       const token1Info = await fetchTokenInfo(token1Address);
-      const token2Info = await fetchTokenInfo(token2Address);
 
       // 👇 建立 symbol 到 address 映射
+      newSymbolToAddress[token0Info.symbol] = token0Address;
       newSymbolToAddress[token1Info.symbol] = token1Address;
-      newSymbolToAddress[token2Info.symbol] = token2Address;
 
       pools.push({
         poolAddress: addr,
-        tokenA: token1Info.symbol,
-        tokenAAddress: token1Address,
-        tokenB: token2Info.symbol,
-        tokenBAddress: token2Address,
+        tokenA: token0Info.symbol,
+        tokenAAddress: token0Address,
+        tokenB: token1Info.symbol,
+        tokenBAddress: token1Address,
         reserveA: BigInt(reserve1),
         reserveB: BigInt(reserve2),
       });
@@ -137,7 +137,7 @@ export default function PoolPage() {
       return;
     }
 
-    if (!token1Amount || !token2Amount || !selectedPool) {
+    if (!token0Amount || !token1Amount || !selectedPool) {
       alert("Please enter all fields");
       return;
     }
@@ -153,32 +153,32 @@ export default function PoolPage() {
         signer
       );
 
-      const token1 = new ethers.Contract(
+      const token0 = new ethers.Contract(
         symbolToAddress[tokenA],
         ERC20_ABI.abi,
         signer
       );
-      const token2 = new ethers.Contract(
+      const token1 = new ethers.Contract(
         symbolToAddress[tokenB],
         ERC20_ABI.abi,
         signer
       );
 
-      const amount1 = ethers.parseUnits(token1Amount, 18);
-      const amount2 = ethers.parseUnits(token2Amount, 18);
+      const amount1 = ethers.parseUnits(token0Amount, 18);
+      const amount2 = ethers.parseUnits(token1Amount, 18);
 
       const signerAddr = await signer.getAddress();
       const poolConAddr = await poolContract.getAddress();
 
-      const allowance1 = await token1.allowance(signerAddr, poolConAddr);
+      const allowance1 = await token0.allowance(signerAddr, poolConAddr);
       if (allowance1 < amount1) {
-        const tx1 = await token1.approve(poolConAddr, amount1);
+        const tx1 = await token0.approve(poolConAddr, amount1);
         await tx1.wait();
       }
 
-      const allowance2 = await token2.allowance(signerAddr, poolConAddr);
+      const allowance2 = await token1.allowance(signerAddr, poolConAddr);
       if (allowance2 < amount2) {
-        const tx2 = await token2.approve(poolConAddr, amount2);
+        const tx2 = await token1.approve(poolConAddr, amount2);
         await tx2.wait();
       }
 
@@ -329,8 +329,8 @@ export default function PoolPage() {
                     <div className="flex space-x-4">
                       <input
                         type="number"
-                        value={token1Amount}
-                        onChange={(e) => setToken1Amount(e.target.value)}
+                        value={token0Amount}
+                        onChange={(e) => settoken0Amount(e.target.value)}
                         placeholder="0.0"
                         className="flex-1 p-3 border rounded-lg"
                       />
@@ -348,8 +348,8 @@ export default function PoolPage() {
                     <div className="flex space-x-4">
                       <input
                         type="number"
-                        value={token2Amount}
-                        onChange={(e) => setToken2Amount(e.target.value)}
+                        value={token1Amount}
+                        onChange={(e) => settoken1Amount(e.target.value)}
                         placeholder="0.0"
                         className="flex-1 p-3 border rounded-lg"
                       />

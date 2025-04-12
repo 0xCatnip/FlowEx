@@ -36,36 +36,36 @@ export default function LiquidityList() {
           try {
             const amm = new ethers.Contract(ammAddr, curveAmmAbi.abi, provider);
 
-            const [token1Addr, token2Addr] = await Promise.all([
-              amm.token1(),
-              amm.token2(),
+            const [token0Addr, token1Addr] = await Promise.all([
+              amm.token_0(),
+              amm.token_1(),
             ]);
 
-            const [reserve1, reserve2, totalSupply, userBalance] = await Promise.all([
-              amm.reserve1(),
-              amm.reserve2(),
-              amm.totalSupply,
-              amm.balanceOf(userAddress),
+            const [reserve0, reserve1, totalSupply, userBalance] = await Promise.all([
+              amm.token_0_reserve(),
+              amm.token_1_reserve(),
+              amm.total_lp_supply(),
+              amm.user_lp_balance(userAddress),
             ]);
 
+            const token0 = new ethers.Contract(token0Addr, erc20Abi.abi, provider);
             const token1 = new ethers.Contract(token1Addr, erc20Abi.abi, provider);
-            const token2 = new ethers.Contract(token2Addr, erc20Abi.abi, provider);
-            const [symbol1, symbol2] = await Promise.all([
+            const [symbol0, symbol1] = await Promise.all([
+              token0.symbol(),
               token1.symbol(),
-              token2.symbol(),
             ]);
 
-            const share = totalSupply.toString()
-              ? "0%"
-              : `${((userBalance.mul(10000).div(totalSupply).toNumber()) / 100).toFixed(2)}%`;
+            const share = totalSupply && totalSupply.gt(0)
+              ? `${((userBalance.mul(10000).div(totalSupply)).toNumber() / 100).toFixed(2)}%`
+              : "0%";
 
-            const totalValue = reserve1+reserve2;
-            const userValue = totalSupply.toString()
-              ? "0"
-              : ethers.formatUnits(userBalance.mul(totalValue).div(totalSupply), 18);
+            const totalValue = reserve0+reserve1;
+            const userValue = totalSupply && totalSupply.gt(0)
+              ? ethers.formatUnits(userBalance.mul(totalValue).div(totalSupply), 18)
+              : "0";
 
             return {
-              pairName: `${symbol1}/${symbol2}`,
+              pairName: `${symbol0}/${symbol1}`,
               share,
               value: userValue,
             };
