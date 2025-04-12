@@ -161,22 +161,22 @@ export default function AMMPoolPage() {
 
     for (const addr of ammAddresses) {
       const amm = new Contract(addr, AMM_CURVE_ABI.abi, provider);
-      const token1Address = await amm.token1();
-      const token2Address = await amm.token2();
+      const tokenAAddress = await amm.token_0();
+      const tokenBAddress = await amm.token_1();
 
-      const token1Info = await fetchTokenInfo(token1Address);
-      const token2Info = await fetchTokenInfo(token2Address);
+      const tokenAInfo = await fetchTokenInfo(tokenAAddress);
+      const tokenBInfo = await fetchTokenInfo(tokenBAddress);
 
       // 👇 建立 symbol 到 address 映射
-      newSymbolToAddress[token1Info.symbol] = token1Address;
-      newSymbolToAddress[token2Info.symbol] = token2Address;
+      newSymbolToAddress[tokenAInfo.symbol] = tokenAAddress;
+      newSymbolToAddress[tokenBInfo.symbol] = tokenBAddress;
 
       pools.push({
         poolAddress: addr,
-        tokenA: token1Info.symbol,
-        tokenAAddress: token1Address,
-        tokenB: token2Info.symbol,
-        tokenBAddress: token2Address,
+        tokenA: tokenAInfo.symbol,
+        tokenAAddress: tokenAAddress,
+        tokenB: tokenBInfo.symbol,
+        tokenBAddress: tokenBAddress,
       });
     }
     setSymbolToAddress(newSymbolToAddress);

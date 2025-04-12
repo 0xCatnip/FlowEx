@@ -102,11 +102,11 @@ export default function PoolPage() {
     for (const addr of ammAddresses) {
       const amm = new Contract(addr, CurveAMMABI.abi, provider);
 
-      const reserve1 = await amm.reserve1();
-      const reserve2 = await amm.reserve2();
+      const reserve1 = await amm.token_0_reserve();
+      const reserve2 = await amm.token_1_reserve();
 
-      const token1Address = await amm.token1();
-      const token2Address = await amm.token2();
+      const token1Address = await amm.token_0();
+      const token2Address = await amm.token_1();
 
       const token1Info = await fetchTokenInfo(token1Address);
       const token2Info = await fetchTokenInfo(token2Address);
