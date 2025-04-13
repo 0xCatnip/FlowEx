@@ -21,14 +21,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* <Web3Provider> */}
         <WalletProvider>
-          <div className="flex flex-col min-h-screen bg-gradient-to-r from-purple-500 to-blue-500">
+          <div
+            className="flex flex-col min-h-screen bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500"
+            style={{
+              backgroundSize: "200% 200%",
+              animation: "gradientX 3s ease infinite",
+            }}
+          >
             <Navbar />
             <main className="flex-grow">{children}</main>
             <Footer />
           </div>
-          {/* </Web3Provider> */}
         </WalletProvider>
       </body>
     </html>
