@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BrowserProvider } from "ethers";
+import { ethers, BrowserProvider } from "ethers";
 import AMM_CURVE_ABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
 import FACTORY_ABI from "@/contracts/artifacts/src/contracts/CurveAMMFactory.sol/CurveAMMFactory.json";
 import ERC20_ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json";
@@ -23,7 +23,9 @@ export default function AMMPoolPage() {
   const [newPool, setNewPool] = useState();
   const [pools, setPools] = useState<Pool[]>([]);
 
-  const [activeTab, setActiveTab] = useState("pools");
+  const [mintNumber, setMintNumber] = useState<string>("");
+
+  const [activeTab, setActiveTab] = useState("POOL");
 
   interface Token {
     name: string;
@@ -144,6 +146,7 @@ export default function AMMPoolPage() {
       }
 
       await flowExService.addToken(token);
+      // console.log(token)
 
       // 刷新列表
       getAllTokens();
@@ -152,6 +155,21 @@ export default function AMMPoolPage() {
     } catch (err) {
       console.error("Error creating pool:", err);
       alert(err instanceof Error ? err.message : "Failed to create pool");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mintToken = async () => {
+    if (!flowExService || !addrA) return;
+
+    try {
+      const num = ethers.parseUnits(mintNumber, 18);
+      const updatedTokens = await flowExService.mintCoin(addrA, num);
+      alert("Pool created successfully");
+    } catch (err) {
+      console.error("Error Mint:", err);
+      alert(err instanceof Error ? err.message : "Failed to mint coin");
     } finally {
       setLoading(false);
     }
@@ -198,6 +216,17 @@ export default function AMMPoolPage() {
             >
               Coins
             </div>
+            {/* 标签: Create Pool */}
+            <div
+              onClick={() => setActiveTab("MINT")}
+              className={`flex-1 text-center py-2 ${
+                activeTab === "MINT"
+                  ? "text-purple-500 font-bold border-b-2 border-purple-500"
+                  : "text-gray-500"
+              } transition`}
+            >
+              Mint
+            </div>
           </div>
 
           <div className="flex items-center justify-center mb-4">
@@ -219,7 +248,7 @@ export default function AMMPoolPage() {
             <>
               <div className="mb-4">
                 <label className="block text-xs text-gray-500 mb-1">
-                  Select Pool
+                  Select Token A and B
                 </label>
                 <div className="flex space-x-4">
                   <select
@@ -319,6 +348,66 @@ export default function AMMPoolPage() {
                   </div>
                 )}
               </div>
+            </>
+          )}
+
+          {activeTab === "MINT" && (
+            <>
+              <div className="mb-4">
+                <div className="flex space-x-4">
+                  <div>
+                    <label className="block text-xs text-gray-500">Coin</label>
+                    <select
+                      value={addrA}
+                      onChange={(e) => {
+                        const selectedAddr = e.target.value;
+                        setAddrA(selectedAddr);
+                        const selected = tokens.find(
+                          (t) => t.addr === selectedAddr
+                        );
+                        if (selected) {
+                          setTokenA(selected);
+                        }
+                      }}
+                      className="w-full p-3 border rounded-lg bg-white text-gray-700"
+                    >
+                      <option value="" disabled>
+                        --
+                      </option>
+                      {tokens.map((t, index) => (
+                        <option key={index} value={t.addr}>
+                          {t.name.toUpperCase()} ({t.addr.slice(0, 4)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-xs text-gray-500">
+                      Amount
+                    </label>
+                    <input
+                      disabled={!tokenA}
+                      type="number"
+                      value={mintNumber}
+                      onChange={(e) => setMintNumber(e.target.value)}
+                      placeholder="0.0"
+                      className="w-full p-3 border rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={mintToken}
+                disabled={loading || !addrA.trim()}
+                className={`${
+                  !addrA.trim()
+                    ? "bg-gray-100"
+                    : "bg-gradient-to-r from-purple-400 to-blue-500"
+                } w-full text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4`}
+              >
+                {!account ? "Connect" : "Mint"}
+              </button>
             </>
           )}
 

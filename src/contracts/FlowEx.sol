@@ -101,6 +101,16 @@ contract FlowExContract {
         }
     }
 
+    function mintTokenTo(
+        address tokenAddress,
+        address to,
+        uint256 amount
+    ) external {
+        require(tokenAddress != address(0), "Token not found");
+
+        MockERC20(tokenAddress).mint(to, amount);
+    }
+
     // Function to remove a token from the supported tokens list
     function removeToken(string memory name) external {
         address tokenAddr = nameToToken[name];

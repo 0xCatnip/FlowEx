@@ -1,6 +1,6 @@
 import { ethers, AbiCoder } from 'ethers';
 import FlowExABI from "@/contracts/artifacts/src/contracts/FlowEx.sol/FlowExContract.json";
-import MockERC20 from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json"
+import ERC20ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json"
 
 const NEXT_PUBLIC_FLOWEX_ADDRESS = process.env.NEXT_PUBLIC_FLOWEX_ADDRESS!;
 
@@ -14,17 +14,26 @@ export class FlowExService {
         this.contract = new ethers.Contract(NEXT_PUBLIC_FLOWEX_ADDRESS, FlowExABI.abi, signer);
     }
 
+    async mintCoin(addr: string, amount: ethers.BigNumberish) {
+        try {
+            const tx = await this.contract.mintTokenTo(addr, this.signer.getAddress(), amount); // 给当前钱包地址铸造代币
+            await tx.wait(); // 等待交易被矿工打包
+            console.log(`Minted ${amount.toString()} tokens to address ${this.signer.getAddress()}`);
+
+        } catch (error) {
+            console.error("Error minting tokens:", error);
+        }
+    }
+
     async addToken(name: string) {
         try {
-            const tx = await this.contract.addToken("TokenName");
+            const tx = await this.contract.addToken(name);
             console.log(tx);
             await tx.wait();
         } catch (error) {
             console.error("Transaction failed:", error);
         }
     }
-    
-    
 
     // Remove a token (only FlowEx owner)
     async removeToken(name: string) {
@@ -34,7 +43,6 @@ export class FlowExService {
     // Get all supported tokens
     async getAllTokens(): Promise<{ name: string; tokenAddress: string }[]> {
         const result = await this.contract.getAllTokens();
-        console.log(result);
         return result;
     }
 
@@ -45,7 +53,6 @@ export class FlowExService {
             if (!ethers.isAddress(tokenA) || !ethers.isAddress(tokenB)) {
                 throw new Error("Selected tokens are not supported, please contact with admin");
             } else {
-                console.log("Adding pool with tokenA:", tokenA, "and tokenB:", tokenB);
                 const tx = await this.contract.addPool(tokenA, tokenB);
                 await tx.wait();
                 return tx;
@@ -64,7 +71,6 @@ export class FlowExService {
     // Get all pools
     async getAllPools(): Promise<{ tokenA: string; tokenB: string; poolAddress: string; owner: string }[]> {
         const result = await this.contract.getAllPools();
-        console.log(result);
         return result;
     }
 

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import CurveAMMABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
 import FACTORY_ABI from "@/contracts/artifacts/src/contracts/CurveAMMFactory.sol/CurveAMMFactory.json";
 import ERC20_ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json";
-import LiquidityList from "@/components/layout/LiquidityCardList";
 import Link from "next/link";
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS!;
@@ -377,7 +376,7 @@ export default function PoolPage() {
           {/* Remove Liquidity Form */}
           <h2 className="text-lg font-semibold mb-2">Your Liquidity</h2>
           <div className="h-96 overflow-y-auto">
-            <LiquidityList />
+            {/* <LiquidityList /> */}
           </div>
         </div>
       </div>

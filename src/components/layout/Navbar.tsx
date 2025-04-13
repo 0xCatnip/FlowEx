@@ -96,16 +96,10 @@ export default function Navbar() {
               Analytics
             </Link>
             <Link
-              href="/pool"
+              href="/mint"
               className="italic hover:text-gray-300 transition duration-300"
             >
-              Pool
-            </Link>
-            <Link
-              href="/coins"
-              className="italic hover:text-gray-300 transition duration-300"
-            >
-              Coin
+              Mint
             </Link>
 
             {account ? (
