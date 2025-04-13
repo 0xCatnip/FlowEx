@@ -1,384 +1,388 @@
 "use client";
 
-import { Contract, ethers } from "ethers";
 import { useEffect, useState } from "react";
-import CurveAMMABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
+import { BrowserProvider } from "ethers";
+import AMM_CURVE_ABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
 import FACTORY_ABI from "@/contracts/artifacts/src/contracts/CurveAMMFactory.sol/CurveAMMFactory.json";
 import ERC20_ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json";
-import LiquidityList from "@/components/layout/LiquidityCardList";
-import Link from "next/link";
+import { FlowExService } from "@/utils/FlowExService";
+import { useWallet } from "@/app/context/WalletContext";
 
-const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS!;
+export default function AMMPoolPage() {
+  const { account, connect } = useWallet();
+  const [flowExService, setFlowExService] = useState<FlowExService | null>(
+    null
+  );
+  const [token, setToken] = useState("");
+  const [tokenA, setTokenA] = useState<Token>();
+  const [tokenB, setTokenB] = useState<Token>();
+  const [addrA, setAddrA] = useState("");
+  const [addrB, setAddrB] = useState("");
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [newPool, setNewPool] = useState();
+  const [pools, setPools] = useState<Pool[]>([]);
 
-export default function PoolPage() {
-  const [account, setAccount] = useState<string | null>(null);
-  const [provider, setProvider] = useState<any>(null);
-  const [factory, setFactory] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("pools");
 
-  const [tokenA, setTokenA] = useState<string>("");
-  const [tokenB, setTokenB] = useState<string>("");
-  const [token0Amount, settoken0Amount] = useState<string>("");
-  const [token1Amount, settoken1Amount] = useState<string>("");
-  const [selectedPool, setSelectedPool] = useState<{
-    tokenA: string;
-    tokenB: string;
-    tokenAAddress: string;
-    tokenBAddress: string;
-    poolAddress: string;
-    reserveA: bigint;
-    reserveB: bigint;
-  }>({
-    tokenA: "",
-    tokenB: "",
-    tokenAAddress: "",
-    tokenBAddress: "",
-    poolAddress: "",
-    reserveA: BigInt(0),
-    reserveB: BigInt(0),
-  });
-  const [selectedPoolCon, setSelectedPoolCon] = useState<Contract>();
-  const [showModal, setShowModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  interface Token {
+    name: string;
+    addr: string;
+  }
 
-  const [symbolToAddress, setSymbolToAddress] = useState<
-    Record<string, string>
-  >({});
+  interface Pool {
+    tokenA: string; // Address of the first token in the pool
+    tokenB: string; // Address of the second token in the pool
+    poolAddress: string; // Address of the pool contract
+    owner: string;
+  }
 
-  const [ammPools, setAmmPools] = useState<
-    {
-      tokenA: string;
-      tokenB: string;
-      tokenAAddress: string;
-      tokenBAddress: string;
-      poolAddress: string;
-      reserveA: bigint;
-      reserveB: bigint;
-    }[]
-  >([]);
-
+  // 初始化 provider 和 service
   useEffect(() => {
-    async function init() {
-      if (!window.ethereum) return;
-      const browserProvider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await browserProvider.getSigner();
-      const userAddress = await signer.getAddress();
-      const factoryContract = new ethers.Contract(
-        FACTORY_ADDRESS,
-        FACTORY_ABI.abi,
-        signer
-      );
-      setAccount(userAddress);
-      setProvider(browserProvider);
-      setFactory(factoryContract);
-    }
+    const init = async () => {
+      if (!window.ethereum || !account) return;
+
+      try {
+        const provider = new BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        setFlowExService(new FlowExService(signer));
+      } catch (error) {
+        console.error("Initialization error:", error);
+      }
+    };
+
     init();
-  }, []);
+  }, [account]); // 依赖 account 变化
 
-  const fetchTokenInfo = async (tokenAddress: string) => {
-    const tokenContract = new Contract(tokenAddress, ERC20_ABI.abi, provider);
-    const symbol = await tokenContract.symbol();
-    return { symbol };
+  // 获取 token 列表
+  useEffect(() => {
+    const fetchTokens = async () => {
+      if (!flowExService) return;
+      try {
+        getAllTokens();
+        getAllPools();
+      } catch (error) {
+        console.error("Failed to fetch tokens:", error);
+      }
+    };
+
+    fetchTokens();
+  }, [flowExService]);
+
+  const fetchTokenName = (addr: string) => {
+    const fetched = tokens.find((t) => t.addr === addr);
+    return fetched?.name;
   };
 
-  const fetchAMMs = async () => {
-    if (!factory) return;
-
-    const pools: {
-      tokenA: string;
-      tokenB: string;
-      tokenAAddress: string;
-      tokenBAddress: string;
-      poolAddress: string;
-      reserveA: bigint;
-      reserveB: bigint;
-    }[] = [];
-
-    const ammAddresses: string[] = await factory.getAMMs();
-
-    const newSymbolToAddress: Record<string, string> = {};
-
-    console.log(ammAddresses);
-
-    for (const addr of ammAddresses) {
-      const amm = new Contract(addr, CurveAMMABI.abi, provider);
-
-      const reserve1 = await amm.token_0_reserve();
-      const reserve2 = await amm.token_1_reserve();
-
-      const token0Address = await amm.token_0();
-      const token1Address = await amm.token_1();
-
-      const token0Info = await fetchTokenInfo(token0Address);
-      const token1Info = await fetchTokenInfo(token1Address);
-
-      // 👇 建立 symbol 到 address 映射
-      newSymbolToAddress[token0Info.symbol] = token0Address;
-      newSymbolToAddress[token1Info.symbol] = token1Address;
-
-      pools.push({
-        poolAddress: addr,
-        tokenA: token0Info.symbol,
-        tokenAAddress: token0Address,
-        tokenB: token1Info.symbol,
-        tokenBAddress: token1Address,
-        reserveA: BigInt(reserve1),
-        reserveB: BigInt(reserve2),
-      });
-    }
-    setSymbolToAddress(newSymbolToAddress);
-    console.log(newSymbolToAddress);
-    setAmmPools(pools);
-    console.log(pools);
+  const getAllTokens = async () => {
+    if (!flowExService) return;
+    const updatedTokens = await flowExService.getAllTokens();
+    const plainData = updatedTokens.map((item) => ({
+      name: item.name,
+      addr: item.tokenAddress,
+    }));
+    setTokens(plainData);
   };
 
-  const handleAddLiquidity = async () => {
-    if (!window.ethereum) {
-      alert("Please install MetaMask");
-      return;
-    }
+  const getAllPools = async () => {
+    if (!flowExService) return;
+    const updatedPools = await flowExService.getAllPools();
+    const plainData = updatedPools.map((p) => ({
+      tokenA: p.tokenA,
+      tokenB: p.tokenB,
+      poolAddress: p.poolAddress,
+      owner: p.owner,
+    }));
+    setPools(plainData);
+    console.log(plainData);
+  };
 
-    if (!token0Amount || !token1Amount || !selectedPool) {
-      alert("Please enter all fields");
-      return;
-    }
+  const createNewPool = async () => {
+    if (!flowExService || !tokenA?.addr.trim()) return;
 
     try {
-      setIsLoading(true);
-      const signer = await provider.getSigner();
-      const poolAddress = selectedPool.poolAddress;
-      console.log(poolAddress);
-      const poolContract = new ethers.Contract(
-        poolAddress,
-        CurveAMMABI.abi,
-        signer
-      );
+      setLoading(true);
 
-      const token0 = new ethers.Contract(
-        symbolToAddress[tokenA],
-        ERC20_ABI.abi,
-        signer
-      );
-      const token1 = new ethers.Contract(
-        symbolToAddress[tokenB],
-        ERC20_ABI.abi,
-        signer
-      );
-
-      const amount1 = ethers.parseUnits(token0Amount, 18);
-      const amount2 = ethers.parseUnits(token1Amount, 18);
-
-      const signerAddr = await signer.getAddress();
-      const poolConAddr = await poolContract.getAddress();
-
-      const allowance1 = await token0.allowance(signerAddr, poolConAddr);
-      if (allowance1 < amount1) {
-        const tx1 = await token0.approve(poolConAddr, amount1);
-        await tx1.wait();
+      // 如果未连接钱包，先连接
+      if (!account) {
+        await connect();
+        return;
       }
 
-      const allowance2 = await token1.allowance(signerAddr, poolConAddr);
-      if (allowance2 < amount2) {
-        const tx2 = await token1.approve(poolConAddr, amount2);
-        await tx2.wait();
+      if (addrA === addrB) {
+        throw new Error(
+          "You cannot select 2 same type of token in a single pool"
+        );
       }
 
-      const tx = await poolContract.addLiquidity(amount1, amount2);
-      await tx.wait();
+      await flowExService.addPool(addrA, addrB);
 
-      alert("Liquidity added successfully");
-      setShowModal(false);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to add liquidity");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      // 刷新列表
+      getAllPools();
 
-  const handleRemoveLiquidity = async () => {
-    if (!window.ethereum || !selectedPool) {
-      alert("Please connect your wallet and select a pool");
-      return;
-    }
-
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      const poolAddress = selectedPool.poolAddress;
-      const poolContract = new ethers.Contract(
-        poolAddress,
-        CurveAMMABI.abi,
-        signer
-      );
-
-      const liquidityAmount = ethers.parseUnits("1.0", 18); // 示例值
-
-      const tx = await poolContract.removeLiquidity(liquidityAmount);
-      await tx.wait();
-
-      alert("Liquidity removed successfully");
+      alert("Pool created successfully");
     } catch (err) {
-      console.error(err);
-      alert("Failed to remove liquidity");
+      console.error("Error creating pool:", err);
+      alert(err instanceof Error ? err.message : "Failed to create pool");
+    } finally {
+      setAddrA("");
+      setAddrB("");
+      setLoading(false);
     }
   };
 
-  const handleAddLiquidityWindow = () => {
-    fetchAMMs();
-    setShowModal(true);
+  const createNewToken = async () => {
+    if (!flowExService || !token.trim()) return;
+
+    try {
+      setLoading(true);
+
+      // 如果未连接钱包，先连接
+      if (!account) {
+        await connect();
+        return;
+      }
+
+      await flowExService.addToken(token);
+
+      // 刷新列表
+      getAllTokens();
+
+      alert("Pool created successfully");
+    } catch (err) {
+      console.error("Error creating pool:", err);
+      alert(err instanceof Error ? err.message : "Failed to create pool");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
+  const handleRefresh = async () => {
+    if (!flowExService) return;
+
+    try {
+      const updatedTokens = await flowExService.getAllTokens();
+      console.log(updatedTokens);
+    } catch (error) {
+      console.error("Refresh failed:", error);
+      alert("Failed to refresh token list");
+    }
   };
 
   return (
     <main className="min-h-screen">
       <div className="min-h-screen w-full flex flex-col items-center justify-center">
         <div className="w-1/3 h-auto bg-white rounded-xl shadow-lg p-6">
+          {/* 标签区 */}
+          <div className="flex border-b mb-4 cursor-pointer">
+            {/* 标签: Pools */}
+            <div
+              onClick={() => setActiveTab("POOL")}
+              className={`flex-1 text-center py-2 ${
+                activeTab === "POOL"
+                  ? "text-purple-500 font-bold border-b-2 border-purple-500"
+                  : "text-gray-500"
+              } transition`}
+            >
+              Pools
+            </div>
+
+            {/* 标签: Create Pool */}
+            <div
+              onClick={() => setActiveTab("COIN")}
+              className={`flex-1 text-center py-2 ${
+                activeTab === "COIN"
+                  ? "text-purple-500 font-bold border-b-2 border-purple-500"
+                  : "text-gray-500"
+              } transition`}
+            >
+              Coins
+            </div>
+          </div>
+
           <div className="flex items-center justify-center mb-4">
             <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
-              POOL
+              {activeTab === "POOL"
+                ? "Pool Registration Panel"
+                : "Token Registration Panel"}
             </p>
           </div>
 
-          {/* Add Liquidity Form */}
-          <button
-            onClick={handleAddLiquidityWindow}
-            className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4"
-            disabled={!account}
-          >
-            {account ? "Add Liquidity" : "Connect Wallet to Add Liquidity"}
-          </button>
-          {showModal && (
-            <div className="fixed inset-0 h-full w-full z-50 flex items-center justify-center backdrop-blur-sm bg-black bg-opacity-20">
-              <div className="w-1/3 bg-white rounded-lg shadow-lg p-6 mb-8">
-                <div className="flex items-center justify-center mb-4">
-                  <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
-                    ADD LIQUIDITY
-                  </p>
-                </div>
-                {selectedPool.poolAddress != "" && (
-                  <div className="mb-6 text-sm text-gray-600 space-y-1 p-3 rounded-lg border bg-gray-50">
-                    <p>
-                      <span className="font-semibold">Pool Address:</span>{" "}
-                      {selectedPool.poolAddress.slice(0, 16)}
-                    </p>
-                    <p>
-                      <span className="font-semibold">
-                        {selectedPool.tokenA} Reserve:
-                      </span>{" "}
-                      {ethers.formatUnits(selectedPool.reserveA, 18) ??
-                        "Loading..."}
-                    </p>
-                    <p>
-                      <span className="font-semibold">
-                        {selectedPool.tokenB} Reserve:
-                      </span>{" "}
-                      {ethers.formatUnits(selectedPool.reserveB, 18) ??
-                        "Loading..."}
-                    </p>
-                  </div>
-                )}
+          {/* 连接状态提示 */}
+          {!account && (
+            <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg">
+              Wallet not connected. Click "Connect" to connect first.
+            </div>
+          )}
 
-                <div className="mb-8">
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Select Pool
-                  </label>
+          {activeTab === "POOL" && (
+            <>
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-1">
+                  Select Pool
+                </label>
+                <div className="flex space-x-4">
                   <select
-                    value={selectedPool?.poolAddress}
+                    value={addrA}
                     onChange={(e) => {
-                      const selectedAddress = e.target.value;
-                      const selected = ammPools.find(
-                        (pool) => pool.poolAddress === selectedAddress
+                      const selectedAddr = e.target.value;
+                      setAddrA(selectedAddr);
+                      const selected = tokens.find(
+                        (t) => t.addr === selectedAddr
                       );
                       if (selected) {
-                        setSelectedPool(selected);
-                        setTokenA(selected.tokenA);
-                        setTokenB(selected.tokenB);
+                        setTokenA(selected);
                       }
                     }}
                     className="w-full p-3 border rounded-lg bg-white text-gray-700"
                   >
                     <option value="" disabled>
-                      -- Select a Pool --
+                      --
                     </option>
-                    {ammPools.map((pool, index) => (
-                      <option key={index} value={pool.poolAddress}>
-                        {pool.tokenA}/{pool.tokenB}
+                    {tokens.map((t, index) => (
+                      <option key={index} value={t.addr}>
+                        {t.name.toUpperCase()} ({t.addr.slice(0, 4)})
                       </option>
                     ))}
                   </select>
-                  <Link
-                    href="/amm"
-                    className="text-xs hover:text-gray-300 transition duration-300 text-right"
-                  >
-                    Need more pools?
-                  </Link>
-                </div>
-                <div className="space-y-3">
-                  {/* Token 1 */}
-                  <div>
-                    <label className="block text-xs text-gray-500">
-                      {selectedPool.tokenA == ""
-                        ? "Selected"
-                        : selectedPool.tokenA}{" "}
-                      Amount
-                    </label>
-                    <div className="flex space-x-4">
-                      <input
-                        type="number"
-                        value={token0Amount}
-                        onChange={(e) => settoken0Amount(e.target.value)}
-                        placeholder="0.0"
-                        className="flex-1 p-3 border rounded-lg"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Token 2 */}
-                  <div>
-                    <label className="block text-xs text-gray-500">
-                      {selectedPool.tokenB == ""
-                        ? "Selected"
-                        : selectedPool.tokenB}{" "}
-                      Amount
-                    </label>
-                    <div className="flex space-x-4">
-                      <input
-                        type="number"
-                        value={token1Amount}
-                        onChange={(e) => settoken1Amount(e.target.value)}
-                        placeholder="0.0"
-                        className="flex-1 p-3 border rounded-lg"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-between space-x-4">
-                    <button
-                      onClick={closeModal}
-                      className="w-full bg-gray-300 text-white py-3 rounded-xl hover:bg-gray-400 disabled:bg-gray-400 mb-4"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleAddLiquidity}
-                      className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4"
-                    >
-                      Confirm
-                    </button>
-                  </div>
+                  <select
+                    value={addrB}
+                    onChange={(e) => {
+                      const selectedAddr = e.target.value;
+                      setAddrB(selectedAddr);
+                      const selected = tokens.find(
+                        (t) => t.addr === selectedAddr
+                      );
+                      if (selected) {
+                        setTokenB(selected);
+                      }
+                    }}
+                    className="w-full p-3 border rounded-lg bg-white text-gray-700"
+                  >
+                    <option value="" disabled>
+                      --
+                    </option>
+                    {tokens.map((t, index) => (
+                      <option key={index} value={t.addr}>
+                        {t.name.toUpperCase()} ({t.addr.slice(0, 4)})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            </div>
+
+              <button
+                onClick={createNewPool}
+                disabled={loading || !addrA.trim() || !addrB.trim()}
+                className={`${
+                  !addrA.trim() || !addrB.trim()
+                    ? "bg-gray-100"
+                    : "bg-gradient-to-r from-purple-400 to-blue-500"
+                } w-full text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4`}
+              >
+                {!account ? "Connect" : "Register Pool"}
+              </button>
+
+              <button
+                onClick={handleRefresh}
+                className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4"
+              >
+                Refresh Lists
+              </button>
+
+              {/* Pool 列表 */}
+              <div className="max-h-60 overflow-y-auto">
+                {pools.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    No tokens found
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {pools.map((p, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col text-xs justify-between p-3 border rounded-lg bg-gray-50 hover:shadow-md transition hover:cursor-pointer"
+                      >
+                        <span className="text-sm font-bold break-all">
+                          Service: {fetchTokenName(p.tokenA)?.toUpperCase()} /{" "}
+                          {fetchTokenName(p.tokenB)?.toUpperCase()}
+                        </span>
+                        <span className="">
+                          Address: {p.poolAddress.slice(0, 16).toUpperCase()}
+                        </span>
+                        <span className="">
+                          Owner: {p.owner.slice(0, 16).toUpperCase()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
-          {/* Remove Liquidity Form */}
-          <h2 className="text-lg font-semibold mb-2">Your Liquidity</h2>
-          <div className="h-96 overflow-y-auto">
-            <LiquidityList />
-          </div>
+          {activeTab === "COIN" && (
+            <>
+              <div className="flex gap-2 my-6">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500">
+                    Name of New Token
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Token Name"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    className="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={createNewToken}
+                disabled={loading || !token.trim()}
+                className={`${
+                  !token.trim()
+                    ? "bg-gray-100"
+                    : "bg-gradient-to-r from-purple-400 to-blue-500"
+                } w-full text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4`}
+              >
+                {!account ? "Connect" : "Register Token"}
+              </button>
+
+              <button
+                onClick={handleRefresh}
+                className="w-full bg-gradient-to-r from-purple-400 to-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-400 mb-4"
+              >
+                Refresh Lists
+              </button>
+
+              {/* Token 列表 */}
+              <div className="max-h-60 overflow-y-auto">
+                {tokens.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    No tokens found
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {tokens.map((t, index) => (
+                      <div
+                        key={index}
+                        className="flex text-sm justify-between p-3 border rounded-lg bg-gray-50 hover:shadow-md transition hover:cursor-pointer"
+                      >
+                        <span className="font-medium break-all">
+                          Token {t.name.slice(0, 3)}:
+                        </span>
+                        <span className="">{t.addr.slice(0, 16)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </main>
