@@ -1,4 +1,4 @@
-import { BigNumberish, ethers } from "ethers";
+import { BigNumberish, Contract, ethers } from "ethers";
 import CurveAMMABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
 import ERC20ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json"
 
@@ -36,17 +36,47 @@ export class CurveAMMService {
     }
 
     // 执行兑换
+    // async swap(inputToken: string, inputAmount: ethers.BigNumberish): Promise<ethers.BigNumberish> {
+    //     const tx = await this.contract.swap(inputToken, inputAmount);
+    //     const receipt = await tx.wait();
+    //     return receipt; // 你也可以解析 event logs 来获取 outputAmount
+    // }
+
     async swap(inputToken: string, inputAmount: ethers.BigNumberish): Promise<ethers.BigNumberish> {
+        if (!this.signer) throw new Error("Signer not initialized");
+
+        const tokenContract = new Contract(inputToken, ERC20ABI.abi, this.signer);
+        const userAddress = await this.signer.getAddress();
+
+        const allowance = await tokenContract.allowance(userAddress, this.contract.target);
+
+        // 直接用 JS 的 BigInt 比较
+        if (allowance < inputAmount) {
+            const approveTx = await tokenContract.approve(this.contract.target, inputAmount);
+            await approveTx.wait();
+        }
+
+        // 执行 swap
         const tx = await this.contract.swap(inputToken, inputAmount);
         const receipt = await tx.wait();
-        return receipt; // 你也可以解析 event logs 来获取 outputAmount
+
+        return receipt;
     }
 
     // 预测兑换输出 & 手续费
-    async previewSwap(inputToken: string, inputAmount: ethers.BigNumberish): Promise<{ outputAmount: ethers.BigNumberish, fee: ethers.BigNumberish }> {
+    async previewSwap(inputToken: string, inputAmount: ethers.BigNumberish): Promise<{
+        outputAmount: bigint;
+        fee: bigint;
+        expectedOutput: bigint;
+    }> {
         const [outputAmount, fee] = await this.contract.previewSwap(inputToken, inputAmount);
-        return { outputAmount, fee };
+        return {
+            outputAmount,
+            fee,
+            expectedOutput: outputAmount + fee
+        };
     }
+
 
     // 预测兑换后的储备
     async previewReservesAfterSwap(inputToken: string, inputAmount: ethers.BigNumberish): Promise<{ newReserveA: ethers.BigNumberish, newReserveB: ethers.BigNumberish }> {
@@ -142,4 +172,5 @@ export class CurveAMMService {
             }
         });
     }
+
 }

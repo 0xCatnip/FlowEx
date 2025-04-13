@@ -125,7 +125,10 @@ export default function PoolPage() {
         );
 
         const allTrades = results.flat();
-        setTrades(allTrades);
+        const filted = allTrades.filter(
+          (t) => t.action === "AddLiquidity" || t.action === "RemoveLiquidity"
+        );
+        setTrades(filted);
       } catch (error) {
         console.error("Failed to fetch trades:", error);
       } finally {
@@ -185,7 +188,6 @@ export default function PoolPage() {
             setVisible={setShowRemoveWidget}
           />
 
-          {/* Dummy Liquidity List */}
           <div className="h-96 overflow-y-auto">
             <div className="space-y-6">
               {trades.length === 0 ? (
@@ -193,21 +195,24 @@ export default function PoolPage() {
                   {isLoading ? "Loading" : "No liquidity positions found."}
                 </p>
               ) : (
-                trades.slice().reverse().map((t, i) => (
-                  <div key={i}>
-                    <LiquidityCard
-                      trade={t}
-                      onAddClick={(addr) => {
-                        setPreSelectedPoolAddr(addr);
-                        setShowAddWidget(true);
-                      }}
-                      onRemoveClick={(addr) => {
-                        setPreSelectedPoolAddr(addr);
-                        setShowRemoveWidget(true);
-                      }}
-                    />
-                  </div>
-                ))
+                trades
+                  .slice()
+                  .reverse()
+                  .map((t, i) => (
+                    <div key={i}>
+                      <LiquidityCard
+                        trade={t}
+                        onAddClick={(addr) => {
+                          setPreSelectedPoolAddr(addr);
+                          setShowAddWidget(true);
+                        }}
+                        onRemoveClick={(addr) => {
+                          setPreSelectedPoolAddr(addr);
+                          setShowRemoveWidget(true);
+                        }}
+                      />
+                    </div>
+                  ))
               )}
             </div>
           </div>

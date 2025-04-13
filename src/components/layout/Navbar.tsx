@@ -96,10 +96,10 @@ export default function Navbar() {
               Analytics
             </Link>
             <Link
-              href="/mint"
+              href="/more"
               className="italic hover:text-gray-300 transition duration-300"
             >
-              Mint
+              More
             </Link>
 
             {account ? (

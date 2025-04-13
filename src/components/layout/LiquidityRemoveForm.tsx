@@ -43,7 +43,7 @@ export default function RemoveLiquidityWidget({
 
   const [selectedPool, setSelectedPool] = useState<PoolInfo>();
   const [selectedPoolAddr, setSelectedPoolAddr] = useState(preAddr);
-  const [maxReached, setMaxReached] = useState(false);
+  const [isInvalid, setMaxReached] = useState(false);
 
   const [lpAmount, setLpAmount] = useState<string>("");
 
@@ -188,7 +188,7 @@ export default function RemoveLiquidityWidget({
       <div className="w-2/3 bg-white rounded-lg shadow-lg p-6 mb-8">
         <div className="flex items-center justify-center mb-4">
           <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
-            ADD LIQUIDITY
+            REMOVE LIQUIDITY
           </p>
         </div>
 
@@ -214,30 +214,40 @@ export default function RemoveLiquidityWidget({
         )}
 
         {selectedPool && withdrawPreview && (
-          <div className="mb-4 text-sm text-gray-600 space-y-1 p-3">
+          <div className="mb-4 text-sm text-gray-600 p-3">
             <p className="text-sm font-semibold text-purple-600">
               Predicted Withdrawal:
             </p>
-            <div className="flex space-x-8">
-              <div className="flex flex-col">
-                <div>You’ll receive:</div>
-                <div>Remaining in pool:</div>
+            <div className="mt-3 flex space-y-1 flex-col">
+              <div className="flex">
+                <div className="w-1/4">You’ll receive:</div>
+                <div className="w-1/4">
+                  {selectedPool.nameA.toUpperCase()}:{" "}
+                  <span className="font-medium">
+                    {withdrawPreview.amountA.slice(0, 6)}
+                  </span>
+                </div>
+                <div>
+                  {selectedPool.nameB.toUpperCase()}:
+                  <span className="font-medium">
+                    {withdrawPreview.amountB.slice(0, 6)}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <div>{selectedPool.nameA.toUpperCase()}: </div>
-                <div>{selectedPool.nameB.toUpperCase()}: </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-medium">{withdrawPreview.amountA.slice(0,6)}</span>
-                <span className="font-medium">{withdrawPreview.remainA.slice(0,6)}</span>
-              </div>
-              <div className="flex flex-col">
-                <div>{selectedPool.nameA.toUpperCase()}: </div>
-                <div>{selectedPool.nameB.toUpperCase()}: </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-medium">{withdrawPreview.amountB.slice(0,6)}</span>
-                <span className="font-medium">{withdrawPreview.remainB.slice(0,6)}</span>
+              <div className="flex">
+                <div className="w-1/4">Remaining in pool:</div>
+                <div className="w-1/4">
+                  {selectedPool.nameA.toUpperCase()}:{" "}
+                  <span className="font-medium">
+                    {withdrawPreview.remainA.slice(0, 6)}
+                  </span>
+                </div>
+                <div className="w-1/4">
+                  {selectedPool.nameB.toUpperCase()}:{" "}
+                  <span className="font-medium">
+                    {withdrawPreview.remainB.slice(0, 6)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -288,6 +298,13 @@ export default function RemoveLiquidityWidget({
                     return;
                   }
 
+                  const parsedVal = parseFloat(newVal);
+
+                  if (parsedVal < 0) {
+                    setLpAmount("0");
+                    return;
+                  }
+
                   try {
                     const prediction = await poolService.predictWithdrawResult(
                       newVal
@@ -307,10 +324,10 @@ export default function RemoveLiquidityWidget({
                 }}
                 placeholder="0.0"
                 className={`w-full p-3 border rounded-lg ${
-                  maxReached ? "border-red-500" : ""
+                  isInvalid ? "border-red-500" : ""
                 }`}
               />
-              {maxReached && (
+              {isInvalid && (
                 <p className="text-red-500 text-xs mt-1">
                   Amount exceeds maximum withdrawable. Please lower the LP
                   amount.
@@ -328,10 +345,10 @@ export default function RemoveLiquidityWidget({
             Cancel
           </button>
           <button
-            disabled={!selectedPool || maxReached}
+            disabled={!selectedPool || isInvalid}
             onClick={onConfirm}
             className={`${
-              selectedPool && !maxReached
+              selectedPool && !isInvalid
                 ? "bg-gradient-to-r from-purple-400 to-blue-500"
                 : "bg-gray-300"
             } w-full text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-300`}

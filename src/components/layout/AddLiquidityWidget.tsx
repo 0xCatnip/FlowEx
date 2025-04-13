@@ -102,6 +102,18 @@ export default function AddLiquidityWidget({
     fetchTokens();
   }, [flowExService]);
 
+  // 获取 token 列表
+  useEffect(() => {
+    const fetchTokens = async () => {
+      if (selectedPoolAddr) {
+        const selected = pools.find((p) => p.poolAddress === selectedPoolAddr);
+        if (selected) await fetchPoolToInfo(selected);
+      }
+    };
+
+    fetchTokens();
+  }, [tokens, pools]);
+
   const fetchTokenName = (addr: string) => {
     const fetched = tokens.find((t) => t.addr === addr);
     return fetched ? fetched.name : addr.slice(0, 6) + "...";
@@ -273,7 +285,9 @@ export default function AddLiquidityWidget({
 
           <div className="mt-6 flex justify-between space-x-4">
             <button
-              onClick={() => setVisible(false)}
+              onClick={() => {
+                setVisible(false);
+              }}
               className="w-full bg-red-500 text-white py-3 rounded-xl hover:bg-red-300"
             >
               Cancel

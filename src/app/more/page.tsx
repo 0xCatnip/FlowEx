@@ -39,12 +39,18 @@ export default function AMMPoolPage() {
     owner: string;
   }
 
+  useEffect(() => {
+    if (!account) {
+      connect(); // 尝试连接钱包
+    }
+  }, []);
+
   // 初始化 provider 和 service
   useEffect(() => {
+    if (!window.ethereum || !account) return;
     const init = async () => {
-      if (!window.ethereum || !account) return;
-
       try {
+        console.log("init called with account:", account);
         const provider = new BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         setFlowExService(new FlowExService(signer));

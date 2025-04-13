@@ -193,10 +193,10 @@ contract CurveAMM is ERC20 {
             Trade({
                 user: msg.sender,
                 action: "Swap",
-                tokenA: tokenA,
-                tokenB: tokenB,
-                amountA: inputToken == tokenA ? inputAmount : 0,
-                amountB: inputToken == tokenB ? inputAmount : 0,
+                tokenA: inputToken,
+                tokenB: outToken,
+                amountA: inputAmount,
+                amountB: outputAmount,
                 share: 0,
                 timestamp: block.timestamp
             })
