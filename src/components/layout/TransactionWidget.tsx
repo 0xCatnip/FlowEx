@@ -14,7 +14,7 @@ export default function TransactionCard({
     ethers.formatUnits(val, 18);
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4">
+    <div className="bg-gradient-to-r from-purple-100 to-blue-100 shadow-md rounded-lg p-4">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-sm font-semibold">
           FlowEx: {trade.tokenA}&{trade.tokenB} ({trade.tokenB}&{trade.tokenA})

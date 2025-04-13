@@ -185,7 +185,7 @@ export default function RemoveLiquidityWidget({
 
   return (
     <div className="fixed inset-0 h-full w-full z-50 flex items-center justify-center backdrop-blur-sm bg-black bg-opacity-20">
-      <div className="w-2/3 bg-white rounded-lg shadow-lg p-6 mb-8">
+      <div className="w-1/3 bg-white rounded-lg shadow-lg p-6 mb-8">
         <div className="flex items-center justify-center mb-4">
           <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
             REMOVE LIQUIDITY
