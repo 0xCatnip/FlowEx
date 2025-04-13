@@ -75,8 +75,8 @@ export default function PoolPage() {
     const fetchTokens = async () => {
       if (!flowExService) return;
       try {
-        getAllPools();
-        getAllTokens();
+        await getAllTokens();
+        await getAllPools();
       } catch (error) {
         console.error("Failed to fetch tokens:", error);
       }
@@ -138,7 +138,8 @@ export default function PoolPage() {
 
   const fetchTokenName = (addr: string) => {
     const fetched = tokens.find((t) => t.addr === addr);
-    return fetched?.name;
+    if (fetched) return fetched.name;
+    else return "";
   };
 
   const getAllPools = async () => {
@@ -192,7 +193,7 @@ export default function PoolPage() {
                   {isLoading ? "Loading" : "No liquidity positions found."}
                 </p>
               ) : (
-                trades.map((t, i) => (
+                trades.slice().reverse().map((t, i) => (
                   <div key={i}>
                     <LiquidityCard
                       trade={t}
