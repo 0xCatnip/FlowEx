@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./CurveAMM.sol";
+import "./CurveAMM-old.sol";
 
 contract CurveAMMFactory {
     address[] public allAMMs;
