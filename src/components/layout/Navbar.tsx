@@ -1,21 +1,61 @@
 "use client";
 
-import { useWeb3 } from "@/components/providers/Web3Provider";
+import { BrowserProvider } from "ethers";
 import Link from "next/link";
 import { md5 } from "js-md5";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
-  const { account, connect, disconnect } = useWeb3();
+  const [account, setAccount] = useState<string | null>(null);
   const [showDisconnect, setShowDisconnect] = useState(false);
   const [showAccountInfo, setShowAccountInfo] = useState(false);
 
-  const handleConnect = async () => {
+  // 初始化检查钱包连接状态
+  useEffect(() => {
+    const checkConnection = async () => {
+      if (typeof window !== "undefined" && window.ethereum) {
+        const provider = new BrowserProvider(window.ethereum);
+        const accounts = await provider.listAccounts();
+        if (accounts.length > 0) {
+          setAccount(accounts[0].address);
+        }
+      }
+    };
+    checkConnection();
+  }, []);
+
+  // 监听账户变化
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      setAccount(accounts[0] || null);
+    };
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    return () => {
+      window.ethereum?.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, []);
+
+  const connect = async () => {
     try {
-      await connect();
+      if (!window.ethereum) {
+        window.open("https://metamask.io/download.html", "_blank");
+        throw new Error("MetaMask not installed");
+      }
+
+      const provider = new BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      setAccount(accounts[0]);
     } catch (error) {
       console.error("Failed to connect:", error);
     }
+  };
+
+  const disconnect = () => {
+    setAccount(null);
+    setShowAccountInfo(false);
   };
 
   const toggleDisconnectButton = () => {
@@ -39,21 +79,33 @@ export default function Navbar() {
           <div className="flex items-center space-x-6">
             <Link
               href="/swap"
-              className="hover:text-gray-300 transition duration-300"
+              className="font-bold hover:text-gray-300 transition duration-300"
             >
               Swap
             </Link>
             <Link
+              href="/liquidity"
+              className="font-bold hover:text-gray-300 transition duration-300"
+            >
+              Liquidity
+            </Link>
+            <Link
+              href="/analytics"
+              className="font-bold hover:text-gray-300 transition duration-300"
+            >
+              Analytics
+            </Link>
+            <Link
               href="/pool"
-              className="hover:text-gray-300 transition duration-300"
+              className="italic hover:text-gray-300 transition duration-300"
             >
               Pool
             </Link>
             <Link
-              href="/analytics"
-              className="hover:text-gray-300 transition duration-300"
+              href="/coins"
+              className="italic hover:text-gray-300 transition duration-300"
             >
-              Analytics
+              Coin
             </Link>
 
             {account ? (
@@ -70,7 +122,7 @@ export default function Navbar() {
               </div>
             ) : (
               <button
-                onClick={handleConnect}
+                onClick={connect}
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-300 shadow-lg hover:shadow-xl"
               >
                 Connect Wallet
@@ -83,10 +135,10 @@ export default function Navbar() {
       {showAccountInfo && account && (
         <div className="absolute right-0 mt-2 w-64 bg-white bg-opacity-20 text-white p-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">
           <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">Account Information</h3>
-          <p className="text-sm mb-1 overflow-hidden text-ellipsis whitespace-nowrap">
-            <strong>Address:</strong> {`${account.slice(0, 6)}...${account.slice(-4)}`}
-          </p>
+            <h3 className="text-lg font-semibold mb-2">Account Information</h3>
+            <p className="text-sm mb-1 overflow-hidden text-ellipsis whitespace-nowrap">
+              <strong>Address:</strong> {`${account.slice(0, 6)}...${account.slice(-4)}`}
+            </p>
           </div>
           <button
             onClick={disconnect}
