@@ -8,7 +8,7 @@ import { Pool, Token, Trade } from "@/components/template";
 import { CurveAMMService } from "@/utils/CurveAMMService";
 import { FlowExService } from "@/utils/FlowExService";
 import { useWallet } from "@/utils/WalletService";
-import { BrowserProvider, JsonRpcSigner } from "ethers";
+import { BrowserProvider, JsonRpcSigner, formatUnits } from "ethers";
 import { useEffect, useState } from "react";
 
 export default function AnalyticsPage() {
@@ -26,6 +26,10 @@ export default function AnalyticsPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [totalValueLocked, setTotalValueLocked] = useState(0);
+  const [volume24h, setVolume24h] = useState(0);
+  const [fees24h, setFees24h] = useState(0);
+  const [apy, setApy] = useState(0);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -97,8 +101,35 @@ export default function AnalyticsPage() {
         );
 
         const allTrades = results.flat();
-        const filted = allTrades.filter((t) => t.action === "Swap");
-        setTrades(filted);
+        setTrades(allTrades);
+
+        // Calculate statistics
+        const now = new Date();
+        const trades24h = allTrades.filter(trade => {
+          const tradeTime = new Date(trade.datetime);
+          return now.getTime() - tradeTime.getTime() <= 24 * 60 * 60 * 1000;
+        });
+
+        const tvl = allTrades.reduce((sum, trade) => {
+          const amountA = parseFloat(formatUnits(trade.amountA, 18));
+          const amountB = parseFloat(formatUnits(trade.amountB, 18));
+          return sum + amountA + amountB;
+        }, 0);
+
+        const volume = trades24h.reduce((sum, trade) => {
+          const amountA = parseFloat(formatUnits(trade.amountA, 18));
+          const amountB = parseFloat(formatUnits(trade.amountB, 18));
+          return sum + amountA + amountB;
+        }, 0);
+
+        const fees = volume * 0.003;
+        const yearlyFees = fees * 365;
+        const calculatedApy = tvl > 0 ? (yearlyFees / tvl) * 100 : 0;
+
+        setTotalValueLocked(tvl);
+        setVolume24h(volume);
+        setFees24h(fees);
+        setApy(calculatedApy);
       } catch (error) {
         console.error("Failed to fetch trades:", error);
       } finally {
@@ -175,19 +206,19 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">Total Value Locked</h3>
-            <p className="text-2xl font-bold">$1,234,567</p>
+            <p className="text-2xl font-bold">${totalValueLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">24h Volume</h3>
-            <p className="text-2xl font-bold">$123,456</p>
+            <p className="text-2xl font-bold">${volume24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">24h Fees</h3>
-            <p className="text-2xl font-bold">$1,234</p>
+            <p className="text-2xl font-bold">${fees24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">APY</h3>
-            <p className="text-2xl font-bold">12.34%</p>
+            <p className="text-2xl font-bold">{apy.toFixed(2)}%</p>
           </div>
         </div>
 
@@ -223,33 +254,23 @@ export default function AnalyticsPage() {
                 <tr className="text-left border-b">
                   <th className="pb-2">Time</th>
                   <th className="pb-2">Type</th>
-                  <th className="pb-2">Amount</th>
-                  <th className="pb-2">Price</th>
-                  <th className="pb-2">Value</th>
+                  <th className="pb-2">Token A</th>
+                  <th className="pb-2">Token B</th>
+                  <th className="pb-2">Amount A</th>
+                  <th className="pb-2">Amount B</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b">
-                  <td className="py-2">2 minutes ago</td>
-                  <td className="py-2">Swap</td>
-                  <td className="py-2">1.5 ETH</td>
-                  <td className="py-2">$2,000</td>
-                  <td className="py-2">$3,000</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2">5 minutes ago</td>
-                  <td className="py-2">Add Liquidity</td>
-                  <td className="py-2">10 ETH</td>
-                  <td className="py-2">$2,000</td>
-                  <td className="py-2">$20,000</td>
-                </tr>
-                <tr>
-                  <td className="py-2">10 minutes ago</td>
-                  <td className="py-2">Remove Liquidity</td>
-                  <td className="py-2">5 ETH</td>
-                  <td className="py-2">$2,000</td>
-                  <td className="py-2">$10,000</td>
-                </tr>
+                {trades.slice().reverse().slice(0, 10).map((trade, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="py-2">{trade.datetime}</td>
+                    <td className="py-2">{trade.action}</td>
+                    <td className="py-2">{trade.tokenA}</td>
+                    <td className="py-2">{trade.tokenB}</td>
+                    <td className="py-2">{parseFloat(formatUnits(trade.amountA, 18)).toFixed(6)}</td>
+                    <td className="py-2">{parseFloat(formatUnits(trade.amountB, 18)).toFixed(6)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

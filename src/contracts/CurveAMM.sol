@@ -194,7 +194,7 @@ contract CurveAMM is ERC20 {
                 user: msg.sender,
                 action: "Swap",
                 tokenA: inputToken,
-                tokenB: outToken,
+                tokenB: outputToken,
                 amountA: inputAmount,
                 amountB: outputAmount,
                 share: 0,

@@ -5,7 +5,7 @@ npx hardhat node
 
 ```bash
 npx hardhat compile
-npx hardhat run scripts/deployFactory.ts --network <your_network>
+npx hardhat run scripts/_deploy.ts --network localhost --tsconfig tsconfig.hardhat.json
 ```
 
 Config the local env after deployed the contracts

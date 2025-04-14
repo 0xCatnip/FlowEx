@@ -42,22 +42,38 @@ export default function LiquidityChart({ trades }: { trades: Trade[] }) {
 
   return (
     <div className="w-full h-80">
+      <h2 className="text-xl font-semibold mb-2">Liquidity Over Time</h2>
       <ResponsiveContainer>
         <LineChart data={data}>
-          <XAxis dataKey="time" />
-          <YAxis />
-          <Tooltip />
+          <XAxis dataKey="time" minTickGap={20} />
+          <YAxis
+            tickFormatter={(value) => Number(value).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}
+          />
+          <Tooltip
+            formatter={(value: string) => [
+              Number(value).toLocaleString(undefined, {
+                minimumFractionDigits: 6,
+                maximumFractionDigits: 6
+              }),
+              'Token Amount'
+            ]}
+          />
           <Line
             type="monotone"
             dataKey="liquidityA"
             stroke="#00bcd4"
             name="Token A Liquidity"
+            strokeWidth={2}
           />
           <Line
             type="monotone"
             dataKey="liquidityB"
             stroke="#ff9800"
             name="Token B Liquidity"
+            strokeWidth={2}
           />
         </LineChart>
       </ResponsiveContainer>

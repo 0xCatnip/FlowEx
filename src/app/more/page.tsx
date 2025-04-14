@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ethers, BrowserProvider } from "ethers";
-import AMM_CURVE_ABI from "@/contracts/artifacts/src/contracts/CurveAMM.sol/CurveAMM.json";
-import FACTORY_ABI from "@/contracts/artifacts/src/contracts/CurveAMMFactory.sol/CurveAMMFactory.json";
-import ERC20_ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json";
 import { FlowExService } from "@/utils/FlowExService";
 import { useWallet } from "@/app/context/WalletContext";
 

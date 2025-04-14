@@ -1,6 +1,5 @@
 import { ethers, AbiCoder } from 'ethers';
-import FlowExABI from "@/contracts/artifacts/src/contracts/FlowEx.sol/FlowExContract.json";
-import ERC20ABI from "@/contracts/artifacts/src/contracts/MockERC20.sol/MockERC20.json"
+import FlowExABI from "@/contracts/artifacts/src/contracts/FlowEx.sol/FlowExContract.json"
 
 const NEXT_PUBLIC_FLOWEX_ADDRESS = process.env.NEXT_PUBLIC_FLOWEX_ADDRESS!;
 
