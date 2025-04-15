@@ -1,4 +1,5 @@
 {
-  "/swap/page": "app/swap/page.js",
-  "/liquidity/page": "app/liquidity/page.js"
+  "/more/page": "app/more/page.js",
+  "/liquidity/page": "app/liquidity/page.js",
+  "/analytics/page": "app/analytics/page.js"
 }

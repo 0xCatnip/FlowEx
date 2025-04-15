@@ -199,19 +199,18 @@ export default function PoolPage() {
                   .slice()
                   .reverse()
                   .map((t, i) => (
-                    <div key={i}>
-                      <LiquidityCard
-                        trade={t}
-                        onAddClick={(addr) => {
-                          setPreSelectedPoolAddr(addr);
-                          setShowAddWidget(true);
-                        }}
-                        onRemoveClick={(addr) => {
-                          setPreSelectedPoolAddr(addr);
-                          setShowRemoveWidget(true);
-                        }}
-                      />
-                    </div>
+                    <LiquidityCard
+                      key={i}
+                      trade={t}
+                      onAddClick={(addr) => {
+                        setPreSelectedPoolAddr(addr);
+                        setShowAddWidget(true);
+                      }}
+                      onRemoveClick={(addr) => {
+                        setPreSelectedPoolAddr(addr);
+                        setShowRemoveWidget(true);
+                      }}
+                    />
                   ))
               )}
             </div>

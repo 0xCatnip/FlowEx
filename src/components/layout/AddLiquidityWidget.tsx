@@ -177,10 +177,11 @@ export default function AddLiquidityWidget({
       selectedPool.addrB
     );
     alert("Successfully Generated");
-    setSelectedPool(undefined);
-    setAmountA("");
-    setAmountA("");
-    setVisible(false);
+    // setSelectedPool(undefined);
+    // setAmountA("");
+    // setAmountA("");
+    // setVisible(false);
+    window.location.reload();
   };
 
   return (
@@ -243,7 +244,7 @@ export default function AddLiquidityWidget({
             ))}
           </select>
           <Link
-            href="/mint"
+            href="/more"
             className="text-xs hover:text-gray-300 transition duration-300 text-right block mt-1"
           >
             Need more pools?
@@ -293,11 +294,11 @@ export default function AddLiquidityWidget({
               Cancel
             </button>
             <button
-              disabled={!selectedPool}
+              disabled={!selectedPool|| !amountA || !amountB}
               onClick={onConfirm}
               className={`${
-                selectedPool && "bg-gradient-to-r from-purple-400 to-blue-500"
-              } w-full text-white py-3 rounded-xl hover:bg-blue-600 disabled:bg-gray-300`}
+                !selectedPool|| !amountA || !amountB && "bg-gray-300"
+              } w-full text-white py-3 rounded-xl bg-gradient-to-r from-purple-400 to-blue-500`}
             >
               Confirm
             </button>

@@ -54,7 +54,7 @@ export default function SwapPage() {
     if (!window.ethereum || !account) return;
     const init = async () => {
       try {
-        console.log("init called with account:", account);
+        // console.log("init called with account:", account);
         const provider = new BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         setSigner(signer);
