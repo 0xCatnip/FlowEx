@@ -193,7 +193,7 @@ export default function AMMPoolPage() {
   return (
     <main className="min-h-screen">
       <div className="min-h-screen w-full flex flex-col items-center justify-center">
-        <div className="w-1/3 h-auto bg-white rounded-xl shadow-lg p-6">
+      <div className="w-1/3 bg-white rounded-xl shadow-lg p-6 mt-12">
           {/* 标签区 */}
           <div className="flex border-b mb-4 cursor-pointer">
             {/* 标签: Pools */}
@@ -232,11 +232,11 @@ export default function AMMPoolPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-4 py-4">
             <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
-              {activeTab === "POOL"
-                ? "Pool Registration Panel"
-                : "Token Registration Panel"}
+              {activeTab === "POOL" && "Pool Registration Panel"}
+              {activeTab === "COIN" && "Coin Registration Panel"}
+              {activeTab === "MINT" && "Mint More Coins"}
             </p>
           </div>
 

@@ -64,9 +64,8 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white bg-opacity-20 text-white shadow-lg">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
+    <nav className="fixed inset-0 bg-white bg-opacity-20 text-white shadow-lg h-16">
+        <div className="flex justify-between items-center h-full px-20">
           <div className="flex items-center">
             <Link
               href="/"
@@ -124,7 +123,6 @@ export default function Navbar() {
             )}
           </div>
         </div>
-      </div>
 
       {showAccountInfo && account && (
         <div className="absolute right-0 mt-2 w-64 bg-white bg-opacity-20 text-white p-4 rounded-lg shadow-lg transition-transform transform hover:scale-105">

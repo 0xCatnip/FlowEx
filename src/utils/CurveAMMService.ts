@@ -65,15 +65,19 @@ export class CurveAMMService {
 
     // 预测兑换输出 & 手续费
     async previewSwap(inputToken: string, inputAmount: ethers.BigNumberish): Promise<{
-        outputAmount: bigint;
-        fee: bigint;
-        expectedOutput: bigint;
+        outputAmount: ethers.BigNumberish;
+        fee: ethers.BigNumberish;
+        expectedOutput: ethers.BigNumberish;
     }> {
         const [outputAmount, fee] = await this.contract.previewSwap(inputToken, inputAmount);
+
+        // 返回值都使用 BigNumber 类型
+        const expectedOutput = outputAmount.add(fee);
+
         return {
             outputAmount,
             fee,
-            expectedOutput: outputAmount + fee
+            expectedOutput: expectedOutput
         };
     }
 
@@ -134,7 +138,6 @@ export class CurveAMMService {
         };
 
     };
-
 
     async getTotalSupply(): Promise<BigNumberish> {
         const totalLp = await this.erc20Contract.totalSupply();

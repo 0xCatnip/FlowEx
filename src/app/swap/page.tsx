@@ -1,18 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  ArrowDownIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ArrowsRightLeftIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowsRightLeftIcon } from "@heroicons/react/24/outline";
 import { useWallet } from "@/utils/WalletService";
 import { ethers, BrowserProvider, JsonRpcSigner } from "ethers";
 import { FlowExService } from "@/utils/FlowExService";
 import { Pool, PoolInfo, Token, Trade } from "@/components/template";
 import { CurveAMMService } from "@/utils/CurveAMMService";
-import Link from "next/link";
 import TransactionCard from "@/components/layout/TransactionWidget";
 
 export default function SwapPage() {
@@ -42,6 +36,8 @@ export default function SwapPage() {
   const [poolService, setPoolService] = useState<CurveAMMService | null>(null);
 
   const [activeTab, setActiveTab] = useState("SWAP");
+
+  const MAX_INPUT = "1000000"; // Example limit
 
   useEffect(() => {
     if (!account) {
@@ -83,11 +79,11 @@ export default function SwapPage() {
 
   useEffect(() => {
     const fetchTrades = async () => {
+      if (!window.ethereum) return;
       setIsLoading(true);
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
       try {
+        const provider = new BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
         const results = await Promise.all(
           pools.map(async (p) => {
             const ps = new CurveAMMService(p.poolAddress, signer);
@@ -111,9 +107,7 @@ export default function SwapPage() {
         );
 
         const allTrades = results.flat();
-        const filted = allTrades.filter(
-          (t) => t.action === "Swap"
-        );
+        const filted = allTrades.filter((t) => t.action === "Swap");
         setTrades(filted);
       } catch (error) {
         console.error("Failed to fetch trades:", error);
@@ -214,23 +208,42 @@ export default function SwapPage() {
     }
   };
 
-  const keyInNum = async (num: string) => {
-    setFromAmount(num);
-    if (!poolService) return;
-    const inputAmount = ethers.parseUnits(num, 18);
-    if (!fromToken) return;
-    const result = await poolService.previewSwap(fromToken, inputAmount);
-    if (result) {
-      const num = ethers.formatUnits(result.outputAmount, 18);
-      setToAmount(num);
-      const expectedOutput =
-        result.outputAmount +
-        ((await poolService.contract.feeRate()) * inputAmount) / 10000n;
-      const slippage = calculateSlippage(expectedOutput, result.outputAmount);
-      // console.log("Slippage:", slippage.toFixed(2) + "%");
-      setSlippage(slippage);
+  const keyInNum = async (fnum: string) => {
+    try {
+        setFromAmount(fnum);
+        if (!poolService) return;
+
+        // Validate input
+        const amount = parseFloat(fnum);
+        if (isNaN(amount) || amount <= 0) {
+            setToAmount("0");
+            return;
+        }
+
+        // Add reasonable upper limit
+        if (amount > 1000000) {
+            alert("Input amount too large");
+            return;
+        }
+
+        const inputAmount = ethers.parseUnits(fnum, 18);
+        if (!fromToken) return;
+
+        const result = await poolService.previewSwap(fromToken, inputAmount);
+
+        if (result) {
+            const tnum = ethers.formatUnits(result.outputAmount, 18);
+            setToAmount(tnum);
+            const expectedOutput = result.expectedOutput;
+            const slippage = calculateSlippage(expectedOutput, result.outputAmount);
+            setSlippage(slippage);
+        }
+    } catch (error) {
+        console.error("Swap preview failed:", error);
+        setToAmount("0");
     }
-  };
+};
+
 
   /**
    * 计算滑点百分比
@@ -239,19 +252,23 @@ export default function SwapPage() {
    * @returns 滑点百分比（如 0.5 表示 0.5%）
    */
   function calculateSlippage(
-    expectedOutput: bigint,
-    actualOutput: bigint
+    expectedOutput: ethers.BigNumberish,
+    actualOutput: ethers.BigNumberish
   ): number {
-    if (expectedOutput <= 0n) return 0;
-    const diff = expectedOutput - actualOutput;
-    const slippage = Number((diff * 10000n) / expectedOutput) / 100; // 精确到 0.01%
-    return Math.max(0, slippage);
+    const expected = ethers.toBigInt(expectedOutput);
+    const actual = ethers.toBigInt(actualOutput);
+
+    if (expected <= 0n) return 0;
+
+    const diff = expected > actual ? expected - actual : 0n;
+    const slippage = Number((diff * 10000n) / expected) / 100; // 精确到 0.01%
+    return slippage;
   }
 
   return (
-    <main className="min-h-screen py-12">
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="w-1/3 bg-white rounded-xl shadow-lg p-6">
+    <main className="min-h-screen">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center">
+        <div className="w-1/3 bg-white rounded-xl shadow-lg p-6 mt-12">
           <div className="flex items-center justify-center mb-6">
             <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-semibold">
               SWAP
@@ -324,10 +341,10 @@ export default function SwapPage() {
                         type="number"
                         step={0.1}
                         min={0}
+                        max={MAX_INPUT}
                         value={fromAmount}
                         onChange={async (e) => {
-                          const num = e.target.value;
-                          await keyInNum(num);
+                          await keyInNum(e.target.value);
                         }}
                         className="w-full p-3 bg-transparent"
                       />
@@ -484,12 +501,12 @@ export default function SwapPage() {
 
           {activeTab === "TRADES" && (
             <>
-              <div className="h-96 overflow-y-auto">
+              <div className="max-h-96 overflow-y-auto">
                 <div className="space-y-6">
                   {trades.length === 0 ? (
-                    <p className="text-gray-400">
+                    <div className="flex items-center justify-center text-gray-400 py-6">
                       {isLoading ? "Loading" : "No liquidity positions found."}
-                    </p>
+                    </div>
                   ) : (
                     trades
                       .slice()

@@ -161,9 +161,9 @@ export default function PoolPage() {
   return (
     <main className="min-h-screen">
       <div className="min-h-screen w-full flex flex-col items-center justify-center">
-        <div className="w-1/3 h-auto bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-center mb-4">
-            <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold">
+        <div className="w-1/3 bg-white rounded-xl shadow-lg p-6 mt-12">
+          <div className="flex items-center justify-center mb-4 py-4">
+            <p className="bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent text-3xl font-bold ">
               {"Liquidity".toUpperCase()}
             </p>
           </div>
@@ -188,12 +188,12 @@ export default function PoolPage() {
             setVisible={setShowRemoveWidget}
           />
 
-          <div className="h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto">
             <div className="space-y-6">
               {trades.length === 0 ? (
-                <p className="text-gray-400">
+                <div className="flex items-center justify-center text-gray-400 py-6">
                   {isLoading ? "Loading" : "No liquidity positions found."}
-                </p>
+                </div>
               ) : (
                 trades
                   .slice()
