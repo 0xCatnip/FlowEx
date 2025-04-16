@@ -13,6 +13,8 @@ contract CurveAMM is ERC20 {
 
     uint256 public feeRate = 30; // 0.3% 手续费
     uint256 public constant FEE_DENOMINATOR = 10000;
+    uint256 public amplification = 1000; // A 值，放大系数（通常较大）
+
 
     struct Trade {
         address user;
@@ -235,16 +237,59 @@ contract CurveAMM is ERC20 {
     }
 
     // ========== 核心算法（简化 Curve AMM） ==========
+    function getD(
+        uint256 x,
+        uint256 y,
+        uint256 A
+    ) internal pure returns (uint256) {
+        uint256 S = x + y;
+        if (S == 0) return 0;
+
+        uint256 D = S;
+        for (uint8 i = 0; i < 256; i++) {
+            uint256 D_P = (D * D) / (x * 2);
+            D_P = (D_P * D) / (y * 2);
+            uint256 prevD = D;
+            uint256 numerator = (2 * D * D_P + A * S * D * 2);
+            uint256 denominator = (3 * D_P + A * D * 2);
+            D = numerator / denominator;
+            if (D > prevD ? D - prevD <= 1 : prevD - D <= 1) {
+                break;
+            }
+        }
+        return D;
+    }
+
+    function getY(
+        uint256 x,
+        uint256 D,
+        uint256 A
+    ) internal pure returns (uint256) {
+        // Solve y using D = x + y + A * (x*y)^2/(x + y)^2, simplified for 2 tokens
+        uint256 c = (D * D * D) / (x * 4 * A);
+        uint256 b = D / (2 * A) + x;
+        uint256 y = D;
+
+        for (uint8 i = 0; i < 256; i++) {
+            uint256 prevY = y;
+            uint256 numerator = y * y + c;
+            uint256 denominator = 2 * y + b - D;
+            y = numerator / denominator;
+            if (y > prevY ? y - prevY <= 1 : prevY - y <= 1) break;
+        }
+        return y;
+    }
+
     function getOutputAmount(
         uint256 x,
         uint256 y,
         uint256 dx
-    ) internal pure returns (uint256 dy) {
-        // 简化模拟 Curve（实际 Curve 使用更复杂的 StableSwap 公式）
-        // dy = y - k / (x + dx)
-        uint256 k = x * y;
+    ) internal view returns (uint256 dy) {
+        uint256 A = amplification;
+        uint256 D = getD(x, y, A);
         uint256 newX = x + dx;
-        uint256 newY = k / newX;
+        uint256 newY = getY(newX, D, A);
+        require(y > newY, "Insufficient liquidity");
         dy = y - newY;
     }
 

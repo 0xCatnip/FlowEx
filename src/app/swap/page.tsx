@@ -210,40 +210,44 @@ export default function SwapPage() {
 
   const keyInNum = async (fnum: string) => {
     try {
-        setFromAmount(fnum);
-        if (!poolService) return;
+      setFromAmount(fnum);
+      if (!poolService) return;
 
-        // Validate input
-        const amount = parseFloat(fnum);
-        if (isNaN(amount) || amount <= 0) {
-            setToAmount("0");
-            return;
-        }
-
-        // Add reasonable upper limit
-        if (amount > 1000000) {
-            alert("Input amount too large");
-            return;
-        }
-
-        const inputAmount = ethers.parseUnits(fnum, 18);
-        if (!fromToken) return;
-
-        const result = await poolService.previewSwap(fromToken, inputAmount);
-
-        if (result) {
-            const tnum = ethers.formatUnits(result.outputAmount, 18);
-            setToAmount(tnum);
-            const expectedOutput = result.expectedOutput;
-            const slippage = calculateSlippage(expectedOutput, result.outputAmount);
-            setSlippage(slippage);
-        }
-    } catch (error) {
-        console.error("Swap preview failed:", error);
+      // Validate input
+      const amount = parseFloat(fnum);
+      if (isNaN(amount) || amount <= 0) {
         setToAmount("0");
-    }
-};
+        return;
+      }
 
+      // Add reasonable upper limit
+      if (amount > 1000000) {
+        alert("Input amount too large");
+        return;
+      }
+
+      const inputAmount = ethers.parseUnits(fnum, 18);
+      if (!fromToken) return;
+
+      const result = await poolService.previewSwap(fromToken, inputAmount);
+
+      if (result) {
+        const tnum = ethers.formatUnits(result.outputAmount, 18);
+        setToAmount(tnum);
+        const expectedOutput = result.expectedOutput;
+        const slippage = calculateSlippage(expectedOutput, result.outputAmount);
+        setSlippage(slippage);
+      }
+    } catch (error) {
+      let msg = "Unknown error";
+      if (error instanceof Error) {
+        msg = error.message;
+      } else {
+        msg = String(error);
+      }
+      alert(msg);
+    }
+  };
 
   /**
    * 计算滑点百分比
