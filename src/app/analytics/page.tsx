@@ -3,7 +3,7 @@
 import FeesChart from "@/components/charts/FeesChart";
 import LiquidityChart from "@/components/charts/LiquidityChart";
 import ShareChart from "@/components/charts/ShareChart";
-import VolumeChart from "@/components/charts/VolumeChart";
+import VolumeChart from "@/components/charts/BalanceChart";
 import { Pool, Token, Trade } from "@/components/template";
 import { CurveAMMService } from "@/utils/CurveAMMService";
 import { FlowExService } from "@/utils/FlowExService";
@@ -13,14 +13,12 @@ import { useEffect, useState } from "react";
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("24h");
-  const [selectedPool, setSelectedPool] = useState("ETH-USDT");
+  const [selectedPool, setSelectedPool] = useState("");
 
   const { account, connect } = useWallet();
   const [signer, setSigner] = useState<JsonRpcSigner | undefined>();
 
-  const [flowExService, setFlowExService] = useState<FlowExService | null>(
-    null
-  );
+  const [flowExService, setFlowExService] = useState<FlowExService | null>(null);
   const [poolService, setPoolService] = useState<CurveAMMService | null>(null);
 
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -35,11 +33,10 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!account) {
-      connect(); // 尝试连接钱包
+      connect(); // Attempt to connect wallet
     }
   }, []);
 
-  // 初始化 provider 和 service
   useEffect(() => {
     if (!window.ethereum || !account) return;
     const init = async () => {
@@ -54,9 +51,8 @@ export default function AnalyticsPage() {
       }
     };
     init();
-  }, [account]); // 依赖 account 变化
+  }, [account]);
 
-  // 获取 token 列表
   useEffect(() => {
     const fetchTokens = async () => {
       if (!flowExService) return;
@@ -67,7 +63,6 @@ export default function AnalyticsPage() {
         console.error("Failed to fetch tokens:", error);
       }
     };
-
     fetchTokens();
   }, [flowExService]);
 
@@ -81,8 +76,7 @@ export default function AnalyticsPage() {
         const results = await Promise.all(
           pools.map(async (p) => {
             const ps = new CurveAMMService(p.poolAddress, signer);
-            const trades = await ps.getAllTrades(); // Trade[]
-
+            const trades = await ps.getAllTrades();
             return trades.map((trade) => ({
               poolOwner: p.owner,
               pooladdress: p.poolAddress,
@@ -93,9 +87,7 @@ export default function AnalyticsPage() {
               amountA: trade.amountA,
               amountB: trade.amountB,
               share: trade.share,
-              datetime: new Date(
-                Number(trade.timestamp) * 1000
-              ).toLocaleString(),
+              datetime: new Date(Number(trade.timestamp) * 1000).toLocaleString(),
             }));
           })
         );
@@ -103,7 +95,6 @@ export default function AnalyticsPage() {
         const allTrades = results.flat();
         setTrades(allTrades);
 
-        // Calculate statistics
         const now = new Date();
         const trades24h = allTrades.filter(trade => {
           const tradeTime = new Date(trade.datetime);
@@ -136,7 +127,6 @@ export default function AnalyticsPage() {
         setIsLoading(false);
       }
     };
-
     fetchTrades();
   }, [pools]);
 
@@ -167,6 +157,15 @@ export default function AnalyticsPage() {
     setPools(plainData);
   };
 
+  // Filter trades for the selected pool
+  const selectedPoolTrades = selectedPool
+    ? trades.filter((trade) => trade.pooladdress === selectedPool)
+    : [];
+  const selectedPoolObj = pools.find((pool) => pool.poolAddress === selectedPool);
+  const poolName = selectedPoolObj
+    ? `${fetchTokenName(selectedPoolObj.tokenA)}/${fetchTokenName(selectedPoolObj.tokenB)}`
+    : "No Pool Selected";
+
   return (
     <main className="w-full">
       <div className="p-16">
@@ -176,45 +175,38 @@ export default function AnalyticsPage() {
               {"Analytics".toUpperCase()}
             </h1>
           </div>
-          <div>
+          <div className="ml-8"> {/* 添加左边距 */}
             <select
               value={selectedPool}
               onChange={(e) => setSelectedPool(e.target.value)}
               className="text-white p-3 bg-transparent"
             >
-              <option value="ETH-USDT">ETH/USDT</option>
-              <option value="ETH-USDC">ETH/USDC</option>
-              <option value="USDT-USDC">USDT/USDC</option>
+              <option value="">Select a pool</option>
+              {pools.map((pool) => (
+                <option key={pool.poolAddress} value={pool.poolAddress}>
+                  {`${fetchTokenName(pool.tokenA)}/${fetchTokenName(pool.tokenB)}`}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex space-x-4 mb-8">
-          {/* <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="p-3 border rounded-lg"
-          >
-            <option value="24h">24 Hours</option>
-            <option value="7d">7 Days</option>
-            <option value="30d">30 Days</option>
-          </select> */}
+          {/* Time range filter (currently commented out) */}
         </div>
 
-        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">Total Value Locked</h3>
-            <p className="text-2xl font-bold">${totalValueLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+            <p className="text-2xl font-bold">${totalValueLocked.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">24h Volume</h3>
-            <p className="text-2xl font-bold">${volume24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+            <p className="text-2xl font-bold">${volume24h.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">24h Fees</h3>
-            <p className="text-2xl font-bold">${fees24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+            <p className="text-2xl font-bold">${fees24h.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-sm text-gray-500 mb-2">APY</h3>
@@ -222,30 +214,21 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Price Chart */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <ShareChart trades={trades}/>
+            <ShareChart trades={selectedPoolTrades} account={account || ""} />
           </div>
-
-          {/* Volume Chart */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <VolumeChart trades={trades} />
+            <VolumeChart trades={selectedPoolTrades} account={account || ""} />
           </div>
-
-          {/* Liquidity Chart */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <LiquidityChart trades={trades}/>
+            <LiquidityChart trades={selectedPoolTrades} poolName={poolName} />
           </div>
-
-          {/* Fees Chart */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <FeesChart trades={trades}/>
+            <FeesChart trades={selectedPoolTrades} />
           </div>
         </div>
 
-        {/* Recent Transactions */}
         <div className="mt-8 bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
           <div className="overflow-x-auto">
@@ -261,7 +244,7 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {trades.slice().reverse().slice(0, 10).map((trade, index) => (
+                {selectedPoolTrades.slice().reverse().slice(0, 10).map((trade, index) => (
                   <tr key={index} className="border-b">
                     <td className="py-2">{trade.datetime}</td>
                     <td className="py-2">{trade.action}</td>

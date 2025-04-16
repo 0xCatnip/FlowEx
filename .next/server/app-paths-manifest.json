@@ -1,5 +1,7 @@
 {
-  "/more/page": "app/more/page.js",
+  "/not-found": "app/not-found.js",
+  "/analytics/page": "app/analytics/page.js",
+  "/page": "app/page.js",
   "/liquidity/page": "app/liquidity/page.js",
-  "/analytics/page": "app/analytics/page.js"
+  "/more/page": "app/more/page.js"
 }

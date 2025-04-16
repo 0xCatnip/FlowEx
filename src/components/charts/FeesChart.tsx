@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend, // 添加图例
 } from "recharts";
 import { formatUnits } from "ethers";
 
@@ -43,12 +44,20 @@ export default function FeesChart({ trades }: { trades: Trade[] }) {
   return (
     <div className="w-full h-80">
       <h2 className="text-xl font-semibold mb-2">Fees Collected</h2>
+      {/* 图例放到图表外部顶部 */}
+      <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <span style={{ color: "#ffc658", fontWeight: 600, marginRight: 16 }}>● Fees</span>
+        <span style={{ color: "#82ca9d", fontWeight: 600 }}>● Cumulative Fees</span>
+      </div>
       <ResponsiveContainer>
-        <AreaChart data={data}>
+        <AreaChart
+          data={data}
+          margin={{ top: 0, right: 30, left: 10, bottom: 40 }} // 顶部margin减小，底部margin增大
+        >
           <XAxis dataKey="time" minTickGap={20} />
           <YAxis
             yAxisId="left"
-            label={{ value: 'Fees (USD)', angle: -90, position: 'insideLeft' }}
+            // 移除label
             tickFormatter={(value) => '$' + value.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
@@ -57,7 +66,7 @@ export default function FeesChart({ trades }: { trades: Trade[] }) {
           <YAxis
             yAxisId="right"
             orientation="right"
-            label={{ value: 'Cumulative Fees (USD)', angle: 90, position: 'insideRight' }}
+            // 移除label
             tickFormatter={(value) => '$' + value.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
