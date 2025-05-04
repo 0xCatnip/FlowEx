@@ -21,11 +21,6 @@ A decentralized exchange built with Next.js, featuring Curve-style AMM, liquidit
   - Chart.js (for data visualization)
 
 - Backend:
-  - Next.js API Routes
-  - Redis (for caching)
-  - The Graph (for historical data)
-
-- Blockchain:
   - Hardhat (local development)
   - Solidity (smart contracts)
 
